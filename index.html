@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioMethane France — Portail Energie</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-brand">
+      <span class="header-icon">⚡</span>
+      <h1>BioMéthane France</h1>
+      <span class="header-badge">Portail Énergie</span>
+    </div>
+    <div class="header-meta">
+      <span id="last-updated"></span>
+    </div>
+  </header>
+
+  <!-- MAIN LAYOUT -->
+  <div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">☰</button>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-label">Sites totaux</span>
+          <span class="kpi-value" id="kpi-total">0</span>
+        </div>
+        <div class="kpi-card kpi-accent">
+          <span class="kpi-label">Capacité totale</span>
+          <span class="kpi-value" id="kpi-capacity">0</span>
+          <span class="kpi-unit">GWh/an</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Sites actifs</span>
+          <span class="kpi-value" id="kpi-active">0</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Régions</span>
+          <span class="kpi-value" id="kpi-regions">0</span>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-section">
+        <h3 class="filters-title">Filtres</h3>
+
+        <!-- Search -->
+        <div class="filter-group">
+          <label for="filter-search">Recherche</label>
+          <input type="text" id="filter-search" placeholder="Projet ou commune..." autocomplete="off">
+        </div>
+
+        <!-- Region -->
+        <div class="filter-group">
+          <label for="filter-region">Région</label>
+          <select id="filter-region">
+            <option value="">Toutes les régions</option>
+          </select>
+        </div>
+
+        <!-- Site type -->
+        <div class="filter-group">
+          <label>Type de site</label>
+          <div id="filter-site-type" class="checkbox-group"></div>
+        </div>
+
+        <!-- Year range -->
+        <div class="filter-group">
+          <label>Période: <span id="year-range-label">2011 — 2026</span></label>
+          <div class="range-slider">
+            <input type="range" id="filter-year-min" min="2011" max="2026" value="2011">
+            <input type="range" id="filter-year-max" min="2011" max="2026" value="2026">
+          </div>
+        </div>
+
+        <!-- Network operator -->
+        <div class="filter-group">
+          <label for="filter-operator">Opérateur réseau</label>
+          <select id="filter-operator">
+            <option value="">Tous les opérateurs</option>
+          </select>
+        </div>
+
+        <!-- Status -->
+        <div class="filter-group">
+          <label>Statut</label>
+          <div class="status-buttons">
+            <button class="status-btn active" data-status="">Tous</button>
+            <button class="status-btn" data-status="True">Ouvert</button>
+            <button class="status-btn" data-status="False">Fermé</button>
+          </div>
+        </div>
+
+        <button class="btn-reset" id="btn-reset">Réinitialiser les filtres</button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <!-- Map -->
+      <div class="map-container">
+        <div id="map"></div>
+      </div>
+
+      <!-- Bottom Tabs -->
+      <div class="bottom-panel">
+        <div class="tab-bar">
+          <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+          <button class="tab-btn" data-tab="table">Données</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div class="tab-content active" id="tab-dashboard">
+          <div class="charts-grid">
+            <div class="chart-card chart-wide">
+              <h4>Évolution cumulative</h4>
+              <canvas id="chart-timeline"></canvas>
+            </div>
+            <div class="chart-card">
+              <h4>Répartition par type</h4>
+              <canvas id="chart-types"></canvas>
+            </div>
+            <div class="chart-card">
+              <h4>Top régions par capacité</h4>
+              <canvas id="chart-regions"></canvas>
+            </div>
+            <div class="chart-card">
+              <h4>Top départements par nombre de sites</h4>
+              <canvas id="chart-departments"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Tab -->
+        <div class="tab-content" id="tab-table">
+          <div class="table-toolbar">
+            <span id="table-count">0 résultats</span>
+            <button class="btn-export" id="btn-export">Exporter CSV</button>
+          </div>
+          <div class="table-wrapper">
+            <table id="data-table">
+              <thead>
+                <tr>
+                  <th data-sort="nom_du_projet">Projet <span class="sort-icon"></span></th>
+                  <th data-sort="commune">Commune <span class="sort-icon"></span></th>
+                  <th data-sort="region">Région <span class="sort-icon"></span></th>
+                  <th data-sort="site">Type <span class="sort-icon"></span></th>
+                  <th data-sort="capacite_de_production_gwh_an">Capacité <span class="sort-icon"></span></th>
+                  <th data-sort="date_de_mes">Date MES <span class="sort-icon"></span></th>
+                  <th data-sort="site_ouvert">Statut <span class="sort-icon"></span></th>
+                </tr>
+              </thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="pagination"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Libraries -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- App JS -->
+  <script src="js/filters.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/table.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
