@@ -524,12 +524,13 @@ body {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  min-height: 220px;
+  height: 260px;
+  min-width: 0;
 }
 
 .chart-card.chart-wide {
   grid-column: 1 / -1;
-  min-height: 200px;
+  height: 240px;
 }
 
 .chart-card h4 {
@@ -542,10 +543,20 @@ body {
   flex-shrink: 0;
 }
 
-.chart-card canvas {
+/* Conteneur à hauteur définie : le canvas en absolu ne peut plus
+   agrandir sa carte (boucle de resize Chart.js) */
+.chart-body {
+  position: relative;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
+}
+
+.chart-body canvas {
+  position: absolute;
+  inset: 0;
   width: 100% !important;
+  height: 100% !important;
 }
 
 /* ============ TABLE ============ */
