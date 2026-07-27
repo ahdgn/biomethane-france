@@ -41,6 +41,22 @@ scoring du radar sont ignorées.
 - Injection : **GWh PCS/an** (capacité de production).
 - Cogénérations : **GWh électriques/an** (énergie injectée). Jamais additionnés.
 
+## Limites connues des données
+
+- **Position des cogénérations** : le registre EDF OA ne fournit aucune coordonnée ;
+  les sites sont géocodés au **centroïde de leur commune** (écart possible de
+  plusieurs km). Signalé dans les fiches et le CSV (`Précision géo`). Voir issue #4.
+- **Échéances de contrat** : estimations (`année MES + durée réglementaire`) —
+  injection 15 ans ; cogé biogaz 20 ans (BG16 ; BG11/BG06 prolongés, arrêté du
+  24/02/2017) ; cogé gaz naturel C13 12 ans / C16 15 ans, rattachées par année de
+  MES alors que l'éligibilité dépendait de la date du CODOA. Avenants et
+  renégociations non captés ; 70 cogés sans date MES. À confirmer en entretien.
+  Voir issue #5.
+- **Filtre prospection 1** : périmètre thèse figé au CR weekly du 12/06/2026
+  (détail dans l'app via le bouton ⓘ) ; il évoluera avec la méthodologie.
+- **Millésime** : registre ODRÉ au 01/01/2025 ; radar cogé extrait mi-2026.
+  Pas de mise à jour automatique à ce stade.
+
 ---
 
 © Nautilus — Tous droits réservés.
