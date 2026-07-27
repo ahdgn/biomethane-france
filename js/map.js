@@ -12,6 +12,8 @@ const MapView = (() => {
   let map;
   let clusterGroup;
   let legendDiv;
+  // légende repliée par défaut sur petit écran (elle couvrirait la carte)
+  let legendCollapsed = window.matchMedia('(max-width: 860px)').matches;
   const markers = new Map(); // id -> marker
 
   function init() {
@@ -175,8 +177,14 @@ const MapView = (() => {
 
     if (!types.length) { legendDiv.innerHTML = ''; return; }
 
+    legendDiv.classList.toggle('collapsed', legendCollapsed);
     legendDiv.innerHTML = `
-      <div class="map-legend-title">Types de site</div>
+      <button class="map-legend-toggle" aria-expanded="${!legendCollapsed}"
+              aria-label="Afficher ou masquer la légende">
+        <span class="map-legend-title">Types de site</span>
+        <span class="chevron" aria-hidden="true">▼</span>
+      </button>
+      <div class="map-legend-body">
       ${types.map(t => {
         const diamond = t.startsWith('Cogénération') ? ' diamond' : '';
         return `<div class="legend-item" data-type="${escapeHtml(t)}" role="button" tabindex="0"
@@ -187,7 +195,14 @@ const MapView = (() => {
         </div>`;
       }).join('')}
       ${hasCogen && hasCommune ? '<div class="legend-note">◆ cogénérations — position à la commune</div>' : ''}
-      <div class="legend-note">Taille du point ∝ capacité</div>`;
+      <div class="legend-note">Taille du point ∝ capacité</div>
+      </div>`;
+
+    legendDiv.querySelector('.map-legend-toggle').addEventListener('click', () => {
+      legendCollapsed = !legendCollapsed;
+      legendDiv.classList.toggle('collapsed', legendCollapsed);
+      legendDiv.querySelector('.map-legend-toggle').setAttribute('aria-expanded', String(!legendCollapsed));
+    });
 
     legendDiv.querySelectorAll('.legend-item').forEach(el => {
       const toggle = () => Filters.toggleType(el.dataset.type);
