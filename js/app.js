@@ -95,8 +95,9 @@
     const defaultH = () => Math.max(240, Math.min(400,
       Math.round(document.querySelector('.main-content').clientHeight * 0.38)));
 
+    // hauteur mémorisée ignorée si inutilisable (< 120 px : panneau quasi fermé)
     const savedH = parseInt(localStorage.getItem('bmf-panel-h') || '', 10);
-    panel.style.height = (savedH >= MIN_H ? savedH : defaultH()) + 'px';
+    panel.style.height = (savedH >= 120 ? savedH : defaultH()) + 'px';
 
     function maxH() {
       return document.querySelector('.main-content').clientHeight - 160;
@@ -125,7 +126,8 @@
       dragging = false;
       resizer.classList.remove('dragging');
       resizer.releasePointerCapture(e.pointerId);
-      localStorage.setItem('bmf-panel-h', String(panel.offsetHeight));
+      // on ne mémorise qu'une hauteur utilisable
+      if (panel.offsetHeight >= 120) localStorage.setItem('bmf-panel-h', String(panel.offsetHeight));
     });
     resizer.addEventListener('dblclick', () => setPanelHeight(defaultH()));
     // clavier : flèches haut/bas sur le séparateur
@@ -148,7 +150,7 @@
       resizeTimeout = setTimeout(() => {
         MapView.invalidateSize();
         Charts.resize();
-        if (panel.offsetHeight > maxH()) setPanelHeight(maxH());
+        if (panel.offsetHeight > maxH()) setPanelHeight(maxH(), false);
       }, 120);
     });
 
