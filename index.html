@@ -3,18 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BioMethane France — Portail Energie</title>
+  <meta name="description" content="Cartographie et analyse des points d'injection de biométhane et des cogénérations en France.">
+  <title>Biométhane France — Portail de suivi</title>
+  <link rel="icon" type="image/png" href="assets/nautilus-icon.png">
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-
-  <!-- App CSS -->
+  <!-- Librairies vendorisées (pas de CDN, pas de fonte externe) -->
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -22,168 +17,216 @@
   <!-- HEADER -->
   <header class="app-header">
     <div class="header-brand">
-      <span class="header-icon">⚡</span>
-      <h1>BioMéthane France</h1>
-      <span class="header-badge">Portail Énergie</span>
+      <button class="icon-btn" id="sidebar-toggle" aria-label="Afficher ou masquer les filtres"
+              aria-expanded="true" aria-controls="sidebar">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <h1>Biométhane France</h1>
+      <span class="header-badge">Portail de suivi</span>
     </div>
-    <div class="header-meta">
-      <span id="last-updated"></span>
-    </div>
+    <div class="header-meta" id="header-meta"></div>
   </header>
 
   <!-- MAIN LAYOUT -->
   <div class="app-layout">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
-      <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">☰</button>
+    <!-- SIDEBAR : filtres uniquement -->
+    <aside class="sidebar" id="sidebar" aria-label="Filtres">
+      <div class="filters-head">
+        <h2 class="filters-title">Filtres</h2>
+        <button class="btn-reset" id="btn-reset" hidden>
+          Réinitialiser <span class="reset-count" id="reset-count"></span>
+        </button>
+      </div>
 
-      <!-- KPI Cards -->
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <span class="kpi-label">Sites totaux</span>
-          <span class="kpi-value" id="kpi-total">0</span>
-        </div>
-        <div class="kpi-card kpi-accent">
-          <span class="kpi-label">Capacité totale</span>
-          <span class="kpi-value" id="kpi-capacity">0</span>
-          <span class="kpi-unit">GWh/an</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Sites actifs</span>
-          <span class="kpi-value" id="kpi-active">0</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Régions</span>
-          <span class="kpi-value" id="kpi-regions">0</span>
+      <!-- Base (visible quand plusieurs jeux de données sont chargés) -->
+      <div class="filter-group" id="group-base" hidden>
+        <span class="filter-label" id="label-base">Base</span>
+        <div class="segmented" id="filter-base" role="group" aria-labelledby="label-base"></div>
+      </div>
+
+      <!-- Recherche -->
+      <div class="filter-group">
+        <label class="filter-label" for="filter-search">Recherche</label>
+        <div class="search-box">
+          <input type="search" id="filter-search" placeholder="Projet ou commune…" autocomplete="off">
         </div>
       </div>
 
-      <!-- Filters -->
-      <div class="filters-section">
-        <h3 class="filters-title">Filtres</h3>
+      <!-- Région -->
+      <div class="filter-group">
+        <label class="filter-label" for="filter-region">Région</label>
+        <select id="filter-region">
+          <option value="">Toutes les régions</option>
+        </select>
+      </div>
 
-        <!-- Search -->
-        <div class="filter-group">
-          <label for="filter-search">Recherche</label>
-          <input type="text" id="filter-search" placeholder="Projet ou commune..." autocomplete="off">
+      <!-- Type de site -->
+      <div class="filter-group">
+        <div class="filter-label-row">
+          <span class="filter-label" id="label-types">Type de site</span>
+          <span class="filter-label-actions">
+            <button class="link-btn" id="types-all">tout</button>·<button class="link-btn" id="types-none">aucun</button>
+          </span>
         </div>
+        <div id="filter-site-type" class="checkbox-group" role="group" aria-labelledby="label-types"></div>
+      </div>
 
-        <!-- Region -->
-        <div class="filter-group">
-          <label for="filter-region">Région</label>
-          <select id="filter-region">
-            <option value="">Toutes les régions</option>
-          </select>
+      <!-- Période de mise en service -->
+      <div class="filter-group">
+        <span class="filter-label" id="label-years">Mise en service&nbsp;: <strong id="year-range-label"></strong></span>
+        <div class="dual-range" id="year-range">
+          <div class="dual-range-track" aria-hidden="true"><div class="dual-range-fill" id="year-range-fill"></div></div>
+          <input type="range" id="filter-year-min" aria-label="Année de mise en service minimale">
+          <input type="range" id="filter-year-max" aria-label="Année de mise en service maximale">
         </div>
-
-        <!-- Site type -->
-        <div class="filter-group">
-          <label>Type de site</label>
-          <div id="filter-site-type" class="checkbox-group"></div>
+        <div class="dual-range-bounds" aria-hidden="true">
+          <span id="year-bound-min"></span><span id="year-bound-max"></span>
         </div>
+      </div>
 
-        <!-- Year range -->
-        <div class="filter-group">
-          <label>Période: <span id="year-range-label">2011 — 2026</span></label>
-          <div class="range-slider">
-            <input type="range" id="filter-year-min" min="2011" max="2026" value="2011">
-            <input type="range" id="filter-year-max" min="2011" max="2026" value="2026">
-          </div>
+      <!-- Opérateur réseau -->
+      <div class="filter-group">
+        <label class="filter-label" for="filter-operator">Opérateur réseau</label>
+        <select id="filter-operator">
+          <option value="">Tous les opérateurs</option>
+        </select>
+      </div>
+
+      <!-- Statut -->
+      <div class="filter-group">
+        <span class="filter-label" id="label-status">Statut</span>
+        <div class="segmented" id="filter-status" role="group" aria-labelledby="label-status">
+          <button class="seg-btn" data-status="" aria-pressed="true">Tous</button>
+          <button class="seg-btn" data-status="open" aria-pressed="false">Ouverts</button>
+          <button class="seg-btn" data-status="closed" aria-pressed="false">Fermés</button>
         </div>
-
-        <!-- Network operator -->
-        <div class="filter-group">
-          <label for="filter-operator">Opérateur réseau</label>
-          <select id="filter-operator">
-            <option value="">Tous les opérateurs</option>
-          </select>
-        </div>
-
-        <!-- Status -->
-        <div class="filter-group">
-          <label>Statut</label>
-          <div class="status-buttons">
-            <button class="status-btn active" data-status="">Tous</button>
-            <button class="status-btn" data-status="True">Ouvert</button>
-            <button class="status-btn" data-status="False">Fermé</button>
-          </div>
-        </div>
-
-        <button class="btn-reset" id="btn-reset">Réinitialiser les filtres</button>
       </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
+    <!-- COLONNE PRINCIPALE -->
     <main class="main-content">
-      <!-- Map -->
+
+      <!-- Bandeau KPI -->
+      <section class="kpi-strip" id="kpi-strip" aria-label="Indicateurs clés"></section>
+
+      <!-- Carte -->
       <div class="map-container">
-        <div id="map"></div>
+        <div id="map" aria-label="Carte des sites"></div>
+        <div class="map-empty" id="map-empty" hidden>
+          <p>Aucun site ne correspond aux filtres.</p>
+          <button class="btn-secondary" id="map-empty-reset">Réinitialiser les filtres</button>
+        </div>
       </div>
 
-      <!-- Bottom Tabs -->
-      <div class="bottom-panel">
+      <!-- Panneau bas : redimensionnable -->
+      <section class="bottom-panel" id="bottom-panel" aria-label="Analyse et données">
+        <div class="panel-resizer" id="panel-resizer" role="separator" aria-orientation="horizontal"
+             aria-label="Redimensionner le panneau" title="Glisser pour redimensionner — double-clic pour réinitialiser"></div>
         <div class="tab-bar">
-          <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-          <button class="tab-btn" data-tab="table">Données</button>
+          <div role="tablist" aria-label="Vues du panneau">
+            <button class="tab-btn" id="tab-btn-analyse" role="tab" aria-selected="true"
+                    aria-controls="tab-analyse" data-tab="analyse">Analyse</button>
+            <button class="tab-btn" id="tab-btn-donnees" role="tab" aria-selected="false"
+                    aria-controls="tab-donnees" data-tab="donnees">Données</button>
+          </div>
+          <div class="panel-actions">
+            <button class="icon-btn" id="panel-maximize" aria-label="Agrandir ou réduire le panneau" title="Agrandir / réduire">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 14l5-5 5 5"
+                stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
         </div>
 
-        <!-- Dashboard Tab -->
-        <div class="tab-content active" id="tab-dashboard">
+        <!-- Onglet Analyse -->
+        <div class="tab-content" id="tab-analyse" role="tabpanel" aria-labelledby="tab-btn-analyse">
           <div class="charts-grid">
             <div class="chart-card chart-wide">
-              <h4>Évolution cumulative</h4>
-              <div class="chart-body"><canvas id="chart-timeline"></canvas></div>
+              <div class="chart-head">
+                <h3>Mises en service par année</h3>
+                <div class="chart-controls">
+                  <div class="segmented segmented-sm" id="timeline-metric" role="group" aria-label="Métrique">
+                    <button class="seg-btn" data-metric="sites" aria-pressed="true">Sites</button>
+                    <button class="seg-btn" data-metric="capacite" aria-pressed="false">Capacité</button>
+                  </div>
+                  <label class="toggle-label"><input type="checkbox" id="timeline-cumul"> Cumul</label>
+                </div>
+              </div>
+              <div class="chart-body"><canvas id="chart-timeline" aria-label="Graphique des mises en service par année"></canvas></div>
+              <div class="chart-empty" hidden>Aucune donnée avec ces filtres</div>
             </div>
             <div class="chart-card">
-              <h4>Répartition par type</h4>
-              <div class="chart-body"><canvas id="chart-types"></canvas></div>
+              <div class="chart-head"><h3>Sites par type</h3></div>
+              <div class="chart-body"><canvas id="chart-types" aria-label="Graphique de la répartition des sites par type"></canvas></div>
+              <div class="chart-empty" hidden>Aucune donnée avec ces filtres</div>
             </div>
             <div class="chart-card">
-              <h4>Top régions par capacité</h4>
-              <div class="chart-body"><canvas id="chart-regions"></canvas></div>
+              <div class="chart-head"><h3 id="chart-regions-title">Capacité d'injection par région</h3></div>
+              <div class="chart-body"><canvas id="chart-regions" aria-label="Graphique de la capacité par région"></canvas></div>
+              <div class="chart-empty" hidden>Aucune donnée avec ces filtres</div>
             </div>
             <div class="chart-card">
-              <h4>Top départements par nombre de sites</h4>
-              <div class="chart-body"><canvas id="chart-departments"></canvas></div>
+              <div class="chart-head"><h3>Top 10 départements — nombre de sites</h3></div>
+              <div class="chart-body"><canvas id="chart-departments" aria-label="Graphique des dix premiers départements par nombre de sites"></canvas></div>
+              <div class="chart-empty" hidden>Aucune donnée avec ces filtres</div>
             </div>
           </div>
         </div>
 
-        <!-- Table Tab -->
-        <div class="tab-content" id="tab-table">
+        <!-- Onglet Données -->
+        <div class="tab-content" id="tab-donnees" role="tabpanel" aria-labelledby="tab-btn-donnees" hidden>
           <div class="table-toolbar">
-            <span id="table-count">0 résultats</span>
-            <button class="btn-export" id="btn-export">Exporter CSV</button>
+            <span id="table-count" aria-live="polite"></span>
+            <div class="table-toolbar-right">
+              <label class="page-size-label" for="page-size">Lignes&nbsp;:</label>
+              <select id="page-size">
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <button class="btn-primary" id="btn-export" title="Exporte le jeu de données filtré">Exporter CSV</button>
+            </div>
           </div>
           <div class="table-wrapper">
             <table id="data-table">
               <thead>
                 <tr>
-                  <th data-sort="nom_du_projet">Projet <span class="sort-icon"></span></th>
-                  <th data-sort="commune">Commune <span class="sort-icon"></span></th>
-                  <th data-sort="region">Région <span class="sort-icon"></span></th>
-                  <th data-sort="site">Type <span class="sort-icon"></span></th>
-                  <th data-sort="capacite_de_production_gwh_an">Capacité <span class="sort-icon"></span></th>
-                  <th data-sort="date_de_mes">Date MES <span class="sort-icon"></span></th>
-                  <th data-sort="site_ouvert">Statut <span class="sort-icon"></span></th>
+                  <th scope="col" data-sort="nom">Projet</th>
+                  <th scope="col" data-sort="commune">Commune</th>
+                  <th scope="col" data-sort="region">Région</th>
+                  <th scope="col" data-sort="type">Type</th>
+                  <th scope="col" data-sort="capacite" class="col-num">Capacité (GWh/an)</th>
+                  <th scope="col" data-sort="dateMes">Mise en service</th>
+                  <th scope="col" data-sort="ouvert">Statut</th>
                 </tr>
               </thead>
               <tbody id="table-body"></tbody>
             </table>
+            <div class="table-empty" id="table-empty" hidden>Aucun site ne correspond aux filtres.</div>
           </div>
-          <div class="pagination" id="pagination"></div>
+          <div class="table-footer">
+            <span id="table-range"></span>
+            <nav class="pagination" id="pagination" aria-label="Pagination du tableau"></nav>
+          </div>
         </div>
-      </div>
+      </section>
     </main>
   </div>
 
-  <!-- Libraries -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- FOOTER -->
+  <footer class="app-footer" id="app-footer">
+    <span id="footer-source"></span>
+    <span id="footer-rights"></span>
+  </footer>
 
-  <!-- App JS -->
+  <!-- Librairies -->
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="vendor/leaflet/leaflet.markercluster.js"></script>
+  <script src="vendor/chartjs/chart.umd.min.js"></script>
+
+  <!-- App -->
+  <script src="js/config.js"></script>
   <script src="js/filters.js"></script>
   <script src="js/map.js"></script>
   <script src="js/charts.js"></script>

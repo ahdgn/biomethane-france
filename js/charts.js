@@ -1,265 +1,274 @@
 /* ============================================
-   Charts — Chart.js dashboard
+   Charts — Chart.js
+   Axe temps linéaire (années manquantes = 0),
+   un seul axe Y, couleurs = CONFIG.TYPE_COLORS
    ============================================ */
 
 const Charts = (() => {
+  const { PALETTE, fmtInt, fmtNum, typeColor, CAP_UNITS } = CONFIG;
+
   let chartTimeline, chartTypes, chartRegions, chartDepartments;
+  let lastData = [];
+  const timelineOpts = { metric: 'sites', cumul: false };
 
-  const CHART_COLORS = [
-    '#10b981', '#3b82f6', '#f59e0b', '#ef4444',
-    '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16',
-    '#f97316', '#6366f1', '#14b8a6', '#e11d48',
-    '#a855f7', '#0ea5e9', '#22c55e',
-  ];
+  const GRID = 'rgba(30, 66, 96, 0.08)';
 
-  const defaultOptions = {
+  const baseOptions = () => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: false,
     plugins: {
-      legend: {
-        labels: {
-          color: '#94a3b8',
-          font: { family: 'Inter', size: 11 },
-          padding: 12,
-          usePointStyle: true,
-          pointStyleWidth: 8,
-        },
-      },
+      legend: { display: false },
       tooltip: {
-        backgroundColor: '#1a1d27',
-        titleColor: '#e2e8f0',
-        bodyColor: '#94a3b8',
-        borderColor: '#2e3347',
+        backgroundColor: '#FFFFFF',
+        titleColor: PALETTE.navy,
+        bodyColor: '#24303C',
+        borderColor: '#D5DCE4',
         borderWidth: 1,
-        cornerRadius: 8,
+        cornerRadius: 6,
         padding: 10,
-        titleFont: { family: 'Inter', weight: '600' },
-        bodyFont: { family: 'Inter' },
+        titleFont: { family: 'Roboto', weight: '700' },
+        bodyFont: { family: 'Roboto' },
       },
     },
-  };
+  });
 
   function init() {
-    Chart.defaults.color = '#94a3b8';
-    Chart.defaults.font.family = 'Inter';
-    Chart.defaults.borderColor = '#2e334733';
+    Chart.defaults.color = '#5F6B7A';
+    Chart.defaults.font.family = 'Roboto';
+    Chart.defaults.font.size = 11;
 
     chartTimeline = new Chart(document.getElementById('chart-timeline'), {
-      type: 'line',
+      type: 'bar',
       data: { labels: [], datasets: [] },
       options: {
-        ...defaultOptions,
-        scales: {
-          x: {
-            grid: { color: '#2e334733' },
-            ticks: { color: '#94a3b8' },
+        ...baseOptions(),
+        plugins: {
+          ...baseOptions().plugins,
+          legend: {
+            display: true,
+            position: 'top',
+            align: 'end',
+            labels: { usePointStyle: true, pointStyleWidth: 8, boxHeight: 6, padding: 10 },
           },
-          y: {
-            position: 'left',
-            grid: { color: '#2e334733' },
-            ticks: { color: '#10b981' },
-            title: { display: true, text: 'Nb. sites (cumulé)', color: '#10b981', font: { size: 11 } },
-          },
-          y1: {
-            position: 'right',
-            grid: { display: false },
-            ticks: { color: '#3b82f6' },
-            title: { display: true, text: 'Capacité GWh/an (cumulée)', color: '#3b82f6', font: { size: 11 } },
+          tooltip: {
+            ...baseOptions().plugins.tooltip,
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label} : ${
+                timelineOpts.metric === 'sites' ? fmtInt(ctx.parsed.y) : fmtNum(ctx.parsed.y, 1) + ' GWh/an'}`,
+            },
           },
         },
-        plugins: {
-          ...defaultOptions.plugins,
-          legend: { ...defaultOptions.plugins.legend, position: 'top' },
+        scales: {
+          x: { stacked: true, grid: { display: false } },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            grid: { color: GRID },
+            ticks: { callback: (v) => v.toLocaleString('fr-FR') },
+            title: { display: true, text: 'Sites', font: { size: 11 } },
+          },
         },
       },
     });
 
     chartTypes = new Chart(document.getElementById('chart-types'), {
-      type: 'doughnut',
+      type: 'bar',
       data: { labels: [], datasets: [] },
-      options: {
-        ...defaultOptions,
-        cutout: '55%',
-        plugins: {
-          ...defaultOptions.plugins,
-          legend: {
-            ...defaultOptions.plugins.legend,
-            position: 'right',
-            labels: {
-              ...defaultOptions.plugins.legend.labels,
-              font: { family: 'Inter', size: 10 },
-              padding: 8,
-            },
-          },
-        },
-      },
+      options: horizontalBarOptions('Nombre de sites', (ctx) => {
+        const total = lastData.length || 1;
+        const pct = (ctx.parsed.x / total * 100);
+        return ` ${fmtInt(ctx.parsed.x)} site${ctx.parsed.x > 1 ? 's' : ''} (${fmtNum(pct, 1)} %)`;
+      }),
     });
 
     chartRegions = new Chart(document.getElementById('chart-regions'), {
       type: 'bar',
       data: { labels: [], datasets: [] },
-      options: {
-        ...defaultOptions,
-        indexAxis: 'y',
-        plugins: {
-          ...defaultOptions.plugins,
-          legend: { display: false },
-        },
-        scales: {
-          x: {
-            grid: { color: '#2e334733' },
-            ticks: { color: '#94a3b8' },
-            title: { display: true, text: 'GWh/an', color: '#94a3b8', font: { size: 11 } },
-          },
-          y: {
-            grid: { display: false },
-            ticks: { color: '#e2e8f0', font: { size: 10 } },
-          },
-        },
-      },
+      options: horizontalBarOptions('GWh/an', (ctx) => ` ${fmtNum(ctx.parsed.x, 1)} GWh/an`),
     });
 
     chartDepartments = new Chart(document.getElementById('chart-departments'), {
       type: 'bar',
       data: { labels: [], datasets: [] },
-      options: {
-        ...defaultOptions,
-        indexAxis: 'y',
-        plugins: {
-          ...defaultOptions.plugins,
-          legend: { display: false },
+      options: horizontalBarOptions('Nombre de sites', (ctx) => ` ${fmtInt(ctx.parsed.x)} sites`),
+    });
+
+    bindControls();
+  }
+
+  function horizontalBarOptions(xTitle, tooltipLabel) {
+    const o = baseOptions();
+    return {
+      ...o,
+      indexAxis: 'y',
+      plugins: {
+        ...o.plugins,
+        tooltip: { ...o.plugins.tooltip, callbacks: { label: tooltipLabel } },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: { color: GRID },
+          ticks: { callback: (v) => v.toLocaleString('fr-FR') },
+          title: { display: true, text: xTitle, font: { size: 11 } },
         },
-        scales: {
-          x: {
-            grid: { color: '#2e334733' },
-            ticks: { color: '#94a3b8' },
-            title: { display: true, text: 'Nombre de sites', color: '#94a3b8', font: { size: 11 } },
-          },
-          y: {
-            grid: { display: false },
-            ticks: { color: '#e2e8f0', font: { size: 10 } },
-          },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#24303C', font: { size: 10.5 }, autoSkip: false,
+                   callback: function (v) {
+                     const label = this.getLabelForValue(v);
+                     return label.length > 26 ? label.slice(0, 25) + '…' : label;
+                   } },
         },
       },
+    };
+  }
+
+  function bindControls() {
+    document.getElementById('timeline-metric').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-metric]');
+      if (!btn) return;
+      timelineOpts.metric = btn.dataset.metric;
+      document.querySelectorAll('#timeline-metric .seg-btn').forEach(b =>
+        b.setAttribute('aria-pressed', String(b.dataset.metric === timelineOpts.metric)));
+      updateTimeline(lastData);
+    });
+    document.getElementById('timeline-cumul').addEventListener('change', (e) => {
+      timelineOpts.cumul = e.target.checked;
+      updateTimeline(lastData);
     });
   }
 
   function update(data) {
+    lastData = data;
     updateTimeline(data);
     updateTypes(data);
     updateRegions(data);
     updateDepartments(data);
   }
 
+  function setEmpty(canvasId, empty) {
+    const card = document.getElementById(canvasId).closest('.chart-card');
+    card.querySelector('.chart-empty').hidden = !empty;
+  }
+
+  /* ---- Mises en service par année ---- */
   function updateTimeline(data) {
-    // Group by year
-    const byYear = {};
-    data.forEach(d => {
-      const y = d.annee_mes;
-      if (!y) return;
-      if (!byYear[y]) byYear[y] = { count: 0, capacity: 0 };
-      byYear[y].count++;
-      byYear[y].capacity += d.capacite_de_production_gwh_an || 0;
+    const withYear = data.filter(d => d.annee);
+    setEmpty('chart-timeline', withYear.length === 0);
+
+    const bases = [...new Set(withYear.map(d => d.base))];
+    const years = withYear.map(d => d.annee);
+    const y0 = years.length ? Math.min(...years) : 2011;
+    const y1 = years.length ? Math.max(...years) : 2026;
+    // axe complet, années sans MES incluses (pas de distorsion temporelle)
+    const labels = [];
+    for (let y = y0; y <= y1; y++) labels.push(y);
+
+    const metricOf = (d) => timelineOpts.metric === 'sites' ? 1 : (d.capacite || 0);
+
+    const BASE_STYLE = {
+      injection: { label: 'Injection', color: PALETTE.teal },
+      cogen: { label: 'Cogénérations', color: PALETTE.navy },
+    };
+
+    const datasets = bases.map(base => {
+      const byYear = Object.fromEntries(labels.map(y => [y, 0]));
+      withYear.filter(d => d.base === base).forEach(d => { byYear[d.annee] += metricOf(d); });
+      let series = labels.map(y => byYear[y]);
+      if (timelineOpts.cumul) {
+        let acc = 0;
+        series = series.map(v => (acc += v));
+      }
+      const s = BASE_STYLE[base] || { label: base, color: PALETTE.grey };
+      return timelineOpts.cumul
+        ? { label: s.label, data: series, type: 'line', borderColor: s.color,
+            backgroundColor: s.color + '22', fill: true, tension: 0.25,
+            pointRadius: 0, pointHitRadius: 8, borderWidth: 2 }
+        : { label: s.label, data: series, backgroundColor: s.color, borderRadius: 2,
+            maxBarThickness: 26 };
     });
 
-    const years = Object.keys(byYear).map(Number).sort((a, b) => a - b);
-    let cumCount = 0, cumCap = 0;
-    const counts = [], caps = [];
-
-    years.forEach(y => {
-      cumCount += byYear[y].count;
-      cumCap += byYear[y].capacity;
-      counts.push(cumCount);
-      caps.push(Math.round(cumCap * 10) / 10);
-    });
-
-    chartTimeline.data.labels = years;
-    chartTimeline.data.datasets = [
-      {
-        label: 'Sites (cumulé)',
-        data: counts,
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16,185,129,0.1)',
-        fill: true,
-        tension: 0.3,
-        yAxisID: 'y',
-        pointRadius: 3,
-        pointBackgroundColor: '#10b981',
-      },
-      {
-        label: 'Capacité GWh/an (cumulée)',
-        data: caps,
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59,130,246,0.1)',
-        fill: true,
-        tension: 0.3,
-        yAxisID: 'y1',
-        pointRadius: 3,
-        pointBackgroundColor: '#3b82f6',
-      },
-    ];
+    const isCap = timelineOpts.metric === 'capacite';
+    chartTimeline.options.scales.y.title.text = isCap
+      ? (timelineOpts.cumul ? 'GWh/an (cumul)' : 'GWh/an mis en service')
+      : (timelineOpts.cumul ? 'Sites (cumul)' : 'Sites mis en service');
+    chartTimeline.options.plugins.legend.display = datasets.length > 1;
+    chartTimeline.data.labels = labels;
+    chartTimeline.data.datasets = datasets;
     chartTimeline.update('none');
   }
 
+  /* ---- Sites par type ---- */
   function updateTypes(data) {
+    setEmpty('chart-types', data.length === 0);
     const byType = {};
-    data.forEach(d => {
-      const type = d.site || 'Inconnu';
-      byType[type] = (byType[type] || 0) + 1;
-    });
-
+    data.forEach(d => { byType[d.type] = (byType[d.type] || 0) + 1; });
     const sorted = Object.entries(byType).sort((a, b) => b[1] - a[1]);
+
     chartTypes.data.labels = sorted.map(([k]) => k);
     chartTypes.data.datasets = [{
       data: sorted.map(([, v]) => v),
-      backgroundColor: sorted.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
-      borderWidth: 0,
-      hoverOffset: 8,
+      backgroundColor: sorted.map(([k]) => typeColor(k)),
+      borderRadius: 2,
+      maxBarThickness: 18,
     }];
     chartTypes.update('none');
   }
 
+  /* ---- Capacité par région (injection uniquement, unités homogènes) ---- */
   function updateRegions(data) {
-    const byRegion = {};
-    data.forEach(d => {
-      const r = d.region || 'Inconnu';
-      byRegion[r] = (byRegion[r] || 0) + (d.capacite_de_production_gwh_an || 0);
-    });
+    const inj = data.filter(d => d.base === 'injection');
+    const onlyCogen = data.length > 0 && inj.length === 0;
+    const source = onlyCogen ? data : inj;
+    const title = document.getElementById('chart-regions-title');
+    title.textContent = onlyCogen
+      ? 'Énergie électrique injectée par région (cogé)'
+      : 'Capacité d\'injection par région';
+    chartRegions.options.scales.x.title.text = onlyCogen ? CAP_UNITS.cogen : CAP_UNITS.injection;
 
-    const sorted = Object.entries(byRegion)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 13);
+    setEmpty('chart-regions', source.length === 0);
+    const byRegion = {};
+    source.forEach(d => {
+      const r = d.region || 'Inconnue';
+      byRegion[r] = (byRegion[r] || 0) + (d.capacite || 0);
+    });
+    const sorted = Object.entries(byRegion).sort((a, b) => b[1] - a[1]);
 
     chartRegions.data.labels = sorted.map(([k]) => k);
     chartRegions.data.datasets = [{
       data: sorted.map(([, v]) => Math.round(v * 10) / 10),
-      backgroundColor: '#10b981',
-      borderRadius: 4,
-      barThickness: 16,
+      backgroundColor: PALETTE.steel,
+      borderRadius: 2,
+      maxBarThickness: 18,
     }];
     chartRegions.update('none');
   }
 
+  /* ---- Top 10 départements ---- */
   function updateDepartments(data) {
+    setEmpty('chart-departments', data.length === 0);
     const byDept = {};
     data.forEach(d => {
       const dept = d.departement || 'Inconnu';
       byDept[dept] = (byDept[dept] || 0) + 1;
     });
-
-    const sorted = Object.entries(byDept)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10);
+    const sorted = Object.entries(byDept).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
     chartDepartments.data.labels = sorted.map(([k]) => k);
     chartDepartments.data.datasets = [{
       data: sorted.map(([, v]) => v),
-      backgroundColor: '#3b82f6',
-      borderRadius: 4,
-      barThickness: 16,
+      backgroundColor: PALETTE.lightBlue,
+      borderRadius: 2,
+      maxBarThickness: 18,
     }];
     chartDepartments.update('none');
   }
 
-  return { init, update };
+  function resize() {
+    [chartTimeline, chartTypes, chartRegions, chartDepartments].forEach(c => c && c.resize());
+  }
+
+  return { init, update, resize };
 })();

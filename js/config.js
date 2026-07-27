@@ -1,0 +1,123 @@
+/* ============================================
+   Config — source unique de vérité
+   (palette, couleurs par type, formats, données)
+   ============================================ */
+
+const CONFIG = (() => {
+
+  // Palette Nautilus (Masterbook)
+  const PALETTE = {
+    teal: '#22788C',
+    navy: '#1E4260',
+    deepNavy: '#002D5F',
+    steel: '#3E6B96',
+    lightBlue: '#9BB4D2',
+    gold: '#CDAC81',
+    sage: '#6F8F6D',
+    terracotta: '#D9844A',
+    amber: '#FBAE40',
+    violet: '#503C64',
+    ink: '#1A1A1A',
+    grey: '#7F7F7F',
+    hairline: '#D5DCE4',
+  };
+
+  // Couleur par type de site — utilisée PARTOUT :
+  // marqueurs carte, légende carte, graphiques, badges tableau.
+  const TYPE_COLORS = {
+    'Agricole autonome': PALETTE.teal,
+    'Agricole territorial': PALETTE.sage,
+    'Industriel territorial': PALETTE.steel,
+    'Station d\'épuration': PALETTE.violet,
+    'Déchets ménagers et biodéchets': PALETTE.terracotta,
+    'ISDND': PALETTE.gold,
+    'Power-to-méthane': PALETTE.amber,
+    'Cogénération — Bioénergies': PALETTE.navy,
+    'Cogénération — Autres filières': PALETTE.grey,
+  };
+  const TYPE_FALLBACK = PALETTE.grey;
+
+  // Jeux de données. Le dashboard s'adapte : la base cogé est
+  // activée simplement en la déclarant ici.
+  const DATASETS = [
+    {
+      id: 'injection',
+      label: 'Injection',
+      labelLong: 'Points d\'injection biométhane',
+      url: 'data/points-injection.json',
+      marker: 'circle',
+      normalize: (d, i) => ({
+        id: 'inj-' + (d.id_unique_projet != null ? d.id_unique_projet : i),
+        base: 'injection',
+        nom: d.nom_du_projet || 'Sans nom',
+        commune: d.commune || '',
+        departement: d.departement || '',
+        region: d.region || '',
+        type: d.site || 'Inconnu',
+        capacite: d.capacite_de_production_gwh_an || 0, // GWh PCS/an
+        annee: d.annee_mes || null,
+        dateMes: d.date_de_mes || null,
+        operateur: d.grx_demandeur || '',
+        reseau: d.type_de_reseau || '',
+        ouvert: d.site_ouvert === 'True',
+        lat: d.coordonnees ? d.coordonnees.lat : null,
+        lon: d.coordonnees ? d.coordonnees.lon : null,
+        geoPrecision: 'site',
+      }),
+    },
+    {
+      id: 'cogen',
+      label: 'Cogénérations',
+      labelLong: 'Cogénérations (cibles de conversion)',
+      url: 'data/cogenerations.json',
+      marker: 'diamond',
+      optional: true, // absent tant que l'ETL n'a pas tourné
+      normalize: (d, i) => ({
+        id: 'cog-' + i,
+        base: 'cogen',
+        nom: d.nom || 'Confidentiel',
+        commune: d.commune || '',
+        departement: d.departement || '',
+        region: d.region || '',
+        type: d.filiere === 'Bioénergies'
+          ? 'Cogénération — Bioénergies'
+          : 'Cogénération — Autres filières',
+        capacite: d.energie_gwh_an || 0, // GWh électriques/an
+        annee: d.annee_mes || null,
+        dateMes: d.date_mes || null,
+        operateur: d.gestionnaire || '',
+        reseau: d.technologie || '',
+        ouvert: d.statut === 'En service',
+        lat: d.lat,
+        lon: d.lon,
+        geoPrecision: d.geo_precision || 'commune',
+        puissanceKw: d.puissance_kw || null,
+        combustible: d.combustible || '',
+      }),
+    },
+  ];
+
+  // Unité de capacité par base (les GWh injection ≠ GWh électriques)
+  const CAP_UNITS = { injection: 'GWh/an', cogen: 'GWh él/an' };
+
+  const SOURCE_NOTE = 'Registre ODRÉ (biométhane, 01/01/2025) · Registre EDF OA (cogénérations)';
+
+  // ---- Formats français ----
+  const fmtInt = (n) => (n == null ? '—' : Math.round(n).toLocaleString('fr-FR'));
+  const fmtNum = (n, dec = 1) =>
+    n == null ? '—' : n.toLocaleString('fr-FR', { maximumFractionDigits: dec });
+  const dateFmt = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  const fmtDate = (iso) => {
+    if (!iso) return '—';
+    const t = Date.parse(iso.length === 10 ? iso + 'T00:00:00' : iso);
+    return Number.isNaN(t) ? iso : dateFmt.format(new Date(t));
+  };
+  const escapeHtml = (text) => String(text == null ? '' : text)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  const typeColor = (type) => TYPE_COLORS[type] || TYPE_FALLBACK;
+
+  return { PALETTE, TYPE_COLORS, TYPE_FALLBACK, DATASETS, CAP_UNITS, SOURCE_NOTE,
+           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor };
+})();
