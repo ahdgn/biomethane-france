@@ -10,7 +10,7 @@
   <!-- Librairies vendorisées (pas de CDN, pas de fonte externe) -->
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
-  <link rel="stylesheet" href="css/style.css?v=20260727-4">
+  <link rel="stylesheet" href="css/style.css?v=20260727-5">
 </head>
 <body>
 
@@ -41,6 +41,27 @@
         <button class="btn-reset" id="btn-reset" hidden>
           Réinitialiser <span class="reset-count" id="reset-count"></span>
         </button>
+      </div>
+
+      <!-- Filtre prospection 1 (périmètre thèse) -->
+      <div class="filter-group prospection-group">
+        <div class="prospection-row">
+          <label class="switch">
+            <input type="checkbox" id="filter-prospection">
+            <span class="switch-track" aria-hidden="true"></span>
+            <span class="switch-text">Filtre prospection 1</span>
+          </label>
+          <button class="info-btn" id="prospection-info-btn" aria-expanded="false"
+                  aria-controls="prospection-info" aria-label="Périmètre du filtre prospection 1">i</button>
+        </div>
+        <div class="info-pop" id="prospection-info" hidden>
+          <strong>Périmètre appliqué</strong> (weekly 12/06/2026 · stratégie v2)
+          <ul>
+            <li><b>Injection</b> : agricole autonome / agricole territorial / industriel territorial · site ouvert · capacité 5–25 GWh/an</li>
+            <li><b>Cogénérations</b> : filière bioénergies · en service · ≥ 1 GWh él/an · hors combustibles spécifiques (bois, déchets ménagers ou industriels, papeterie, biogaz de STEP)</li>
+          </ul>
+          Se combine avec les autres filtres (ex. échéance 2026-29).
+        </div>
       </div>
 
       <!-- Base (visible quand plusieurs jeux de données sont chargés) -->
@@ -243,11 +264,11 @@
   <script src="vendor/chartjs/chart.umd.min.js"></script>
 
   <!-- App -->
-  <script src="js/config.js?v=20260727-4"></script>
-  <script src="js/filters.js?v=20260727-4"></script>
-  <script src="js/map.js?v=20260727-4"></script>
-  <script src="js/charts.js?v=20260727-4"></script>
-  <script src="js/table.js?v=20260727-4"></script>
-  <script src="js/app.js?v=20260727-4"></script>
+  <script src="js/config.js?v=20260727-5"></script>
+  <script src="js/filters.js?v=20260727-5"></script>
+  <script src="js/map.js?v=20260727-5"></script>
+  <script src="js/charts.js?v=20260727-5"></script>
+  <script src="js/table.js?v=20260727-5"></script>
+  <script src="js/app.js?v=20260727-5"></script>
 </body>
 </html>

@@ -144,6 +144,27 @@ const CONFIG = (() => {
     return { annee: null, hyp: null };
   }
 
+  /* ---- Filtre prospection 1 ----
+     Périmètre thèse (CR weekly 12/06/2026 + stratégie d'entrée v2) :
+     · Injection : types agricoles + industriel territorial, site ouvert,
+       capacité 5-25 GWh/an (cible brownfield ; < 25 GWh = guichet ouvert).
+     · Cogé : filière Bioénergies, en service, >= 1 GWh él/an (exclusion
+       micro-unités), combustible non renseigné = méthanisation (un
+       combustible spécifié — bois, déchets ménagers/industriels,
+       papeterie, biogaz de STEP — est hors cible de conversion). */
+  const PROSPECTION1_TYPES_INJ = ['Agricole autonome', 'Agricole territorial', 'Industriel territorial'];
+  function prospection1(d) {
+    if (d.base === 'injection') {
+      return PROSPECTION1_TYPES_INJ.includes(d.type)
+        && d.ouvert && d.capacite >= 5 && d.capacite <= 25;
+    }
+    if (d.base === 'cogen') {
+      return d.type === 'Cogénération — Bioénergies'
+        && d.ouvert && d.capacite >= 1 && !d.combustible;
+    }
+    return false;
+  }
+
   return { PALETTE, TYPE_COLORS, TYPE_FALLBACK, DATASETS, CAP_UNITS, SOURCE_NOTE,
-           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, echeance };
+           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, echeance, prospection1 };
 })();

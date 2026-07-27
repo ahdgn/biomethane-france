@@ -4,7 +4,7 @@
    ============================================ */
 
 const Filters = (() => {
-  const { fmtInt, fmtNum, escapeHtml, typeColor, DATASETS, CAP_UNITS } = CONFIG;
+  const { fmtInt, fmtNum, escapeHtml, typeColor, DATASETS, CAP_UNITS, prospection1 } = CONFIG;
 
   const state = {
     base: '',        // '' = toutes les bases
@@ -16,6 +16,7 @@ const Filters = (() => {
     operator: '',
     status: '',      // '' | 'open' | 'closed'
     window: '',      // '' | 'echue' | '2026-2029' | '2030+'
+    prospection: false, // filtre prospection 1 (périmètre thèse)
   };
 
   const bounds = { yearMin: null, yearMax: null };
@@ -108,6 +109,7 @@ const Filters = (() => {
     if (p.has('o')) state.operator = p.get('o');
     if (p.has('s') && ['open', 'closed'].includes(p.get('s'))) state.status = p.get('s');
     if (p.has('w') && ['echue', '2026-2029', '2030+'].includes(p.get('w'))) state.window = p.get('w');
+    if (p.get('p') === '1') state.prospection = true;
     if (p.has('y')) {
       const [a, b] = p.get('y').split('-').map(Number);
       if (a >= bounds.yearMin && a <= bounds.yearMax) state.yearMin = a;
@@ -128,6 +130,7 @@ const Filters = (() => {
     if (state.operator) p.set('o', state.operator);
     if (state.status) p.set('s', state.status);
     if (state.window) p.set('w', state.window);
+    if (state.prospection) p.set('p', '1');
     if (state.yearMin !== bounds.yearMin || state.yearMax !== bounds.yearMax)
       p.set('y', `${state.yearMin}-${state.yearMax}`);
     if (state.types.size !== allTypes.length) p.set('t', [...state.types].join('|'));
@@ -201,6 +204,19 @@ const Filters = (() => {
       applyFilters();
     });
 
+    // Filtre prospection 1
+    document.getElementById('filter-prospection').addEventListener('change', (e) => {
+      state.prospection = e.target.checked;
+      applyFilters();
+    });
+    const infoBtn = document.getElementById('prospection-info-btn');
+    const infoPop = document.getElementById('prospection-info');
+    infoBtn.addEventListener('click', () => {
+      const open = infoPop.hidden;
+      infoPop.hidden = !open;
+      infoBtn.setAttribute('aria-expanded', String(open));
+    });
+
     // Fenêtre de décision (échéance estimée)
     document.getElementById('filter-window').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-window]');
@@ -259,6 +275,7 @@ const Filters = (() => {
     });
     syncSegmented('filter-status', 'status', state.status);
     syncSegmented('filter-window', 'window', state.window);
+    document.getElementById('filter-prospection').checked = state.prospection;
     if (loadedBases.length > 1) syncSegmented('filter-base', 'base', state.base);
     updateYearUI();
   }
@@ -271,6 +288,7 @@ const Filters = (() => {
     if (state.operator) n++;
     if (state.status) n++;
     if (state.window) n++;
+    if (state.prospection) n++;
     if (state.types.size !== allTypes.length) n++;
     if (state.yearMin !== bounds.yearMin || state.yearMax !== bounds.yearMax) n++;
     return n;
@@ -280,6 +298,7 @@ const Filters = (() => {
 
   function applyFilters() {
     filteredData = allData.filter(d => {
+      if (state.prospection && !prospection1(d)) return false;
       if (state.base && d.base !== state.base) return false;
       if (state.search) {
         const hit = (d.nom || '').toLowerCase().includes(state.search)
@@ -358,6 +377,7 @@ const Filters = (() => {
     state.operator = '';
     state.status = '';
     state.window = '';
+    state.prospection = false;
     state.types = new Set(allTypes);
     state.yearMin = bounds.yearMin;
     state.yearMax = bounds.yearMax;
