@@ -15,6 +15,7 @@ const Filters = (() => {
     yearMax: null,
     operator: '',
     status: '',      // '' | 'open' | 'closed'
+    window: '',      // '' | 'echue' | '2026-2029' | '2030+'
   };
 
   const bounds = { yearMin: null, yearMax: null };
@@ -106,6 +107,7 @@ const Filters = (() => {
     if (p.has('r')) state.region = p.get('r');
     if (p.has('o')) state.operator = p.get('o');
     if (p.has('s') && ['open', 'closed'].includes(p.get('s'))) state.status = p.get('s');
+    if (p.has('w') && ['echue', '2026-2029', '2030+'].includes(p.get('w'))) state.window = p.get('w');
     if (p.has('y')) {
       const [a, b] = p.get('y').split('-').map(Number);
       if (a >= bounds.yearMin && a <= bounds.yearMax) state.yearMin = a;
@@ -125,6 +127,7 @@ const Filters = (() => {
     if (state.region) p.set('r', state.region);
     if (state.operator) p.set('o', state.operator);
     if (state.status) p.set('s', state.status);
+    if (state.window) p.set('w', state.window);
     if (state.yearMin !== bounds.yearMin || state.yearMax !== bounds.yearMax)
       p.set('y', `${state.yearMin}-${state.yearMax}`);
     if (state.types.size !== allTypes.length) p.set('t', [...state.types].join('|'));
@@ -198,6 +201,15 @@ const Filters = (() => {
       applyFilters();
     });
 
+    // Fenêtre de décision (échéance estimée)
+    document.getElementById('filter-window').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-window]');
+      if (!btn) return;
+      state.window = btn.dataset.window;
+      syncSegmented('filter-window', 'window', state.window);
+      applyFilters();
+    });
+
     // Réinitialisation
     document.getElementById('btn-reset').addEventListener('click', resetFilters);
     const mapReset = document.getElementById('map-empty-reset');
@@ -246,6 +258,7 @@ const Filters = (() => {
       cb.checked = state.types.has(cb.value);
     });
     syncSegmented('filter-status', 'status', state.status);
+    syncSegmented('filter-window', 'window', state.window);
     if (loadedBases.length > 1) syncSegmented('filter-base', 'base', state.base);
     updateYearUI();
   }
@@ -257,6 +270,7 @@ const Filters = (() => {
     if (state.region) n++;
     if (state.operator) n++;
     if (state.status) n++;
+    if (state.window) n++;
     if (state.types.size !== allTypes.length) n++;
     if (state.yearMin !== bounds.yearMin || state.yearMax !== bounds.yearMax) n++;
     return n;
@@ -276,6 +290,14 @@ const Filters = (() => {
       if (!state.types.has(d.type)) return false;
       if (d.annee != null && (d.annee < state.yearMin || d.annee > state.yearMax)) return false;
       if (state.operator && d.operateur !== state.operator) return false;
+      if (state.window) {
+        const e = d.echeanceAnnee;
+        if (e == null) return false; // pas d'estimation possible -> hors fenêtre
+        const now = new Date().getFullYear();
+        if (state.window === 'echue' && e >= now) return false;
+        if (state.window === '2026-2029' && (e < 2026 || e > 2029)) return false;
+        if (state.window === '2030+' && e < 2030) return false;
+      }
       if (state.status === 'open' && !d.ouvert) return false;
       if (state.status === 'closed' && d.ouvert) return false;
       return true;
@@ -335,6 +357,7 @@ const Filters = (() => {
     state.region = '';
     state.operator = '';
     state.status = '';
+    state.window = '';
     state.types = new Set(allTypes);
     state.yearMin = bounds.yearMin;
     state.yearMax = bounds.yearMax;

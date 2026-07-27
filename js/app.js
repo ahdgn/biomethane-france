@@ -21,7 +21,13 @@
         const resp = await fetch(ds.url);
         if (!resp.ok) throw new Error(`${ds.url} : HTTP ${resp.status}`);
         const raw = await resp.json();
-        return { ds, records: raw.map(ds.normalize) };
+        const records = raw.map(ds.normalize).map(r => {
+          const e = CONFIG.echeance(r);
+          r.echeanceAnnee = e.annee;
+          r.echeanceHyp = e.hyp;
+          return r;
+        });
+        return { ds, records };
       } catch (err) {
         if (ds.optional) return { ds, records: null }; // base facultative absente
         throw err;
