@@ -106,9 +106,16 @@ const MapView = (() => {
       rows.splice(2, 0, ['Puissance', `${fmtNum(d.puissanceKw, 0)} kW`]);
     if (d.base === 'cogen' && d.combustible)
       rows.splice(1, 0, ['Combustible', d.combustible]);
+    if (d.echeanceAnnee != null)
+      rows.push(['Échéance contrat (est.)', String(d.echeanceAnnee)]);
 
+    const hypNote = d.echeanceHyp
+      ? `<div class="legend-note">Hypothèse : ${escapeHtml(d.echeanceHyp)}</div>` : '';
     const geoNote = d.geoPrecision === 'commune'
       ? `<div class="legend-note">Position au centre de la commune</div>` : '';
+    const gmaps = (d.lat != null && d.lon != null)
+      ? `<a class="popup-link" href="https://www.google.com/maps?q=${d.lat},${d.lon}"
+           target="_blank" rel="noopener noreferrer">Google Maps ↗</a>` : '';
 
     return `
       <div class="popup-title">${escapeHtml(d.nom)}</div>
@@ -118,8 +125,9 @@ const MapView = (() => {
       </dl>
       <div class="popup-foot">
         <span class="status-tag ${d.ouvert ? 'open' : 'closed'}">${d.ouvert ? 'Ouvert' : 'Fermé'}</span>
+        ${gmaps}
       </div>
-      ${geoNote}`;
+      ${hypNote}${geoNote}`;
   }
 
   function update(data) {
@@ -217,5 +225,6 @@ const MapView = (() => {
     if (map) map.invalidateSize();
   }
 
-  return { init, update, focusOn, invalidateSize };
+  // popupHtml exposé : réutilisé pour la fiche site (one-pager) et les tests
+  return { init, update, focusOn, invalidateSize, popupHtml };
 })();

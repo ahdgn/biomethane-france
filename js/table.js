@@ -107,6 +107,7 @@ const DataTable = (() => {
         </span></td>
         <td class="col-num" title="${unit}">${fmtNum(d.capacite, 2)}</td>
         <td>${fmtDate(d.dateMes)}</td>
+        <td class="col-num" title="${escapeHtml(d.echeanceHyp || 'estimation non disponible')}">${d.echeanceAnnee != null ? d.echeanceAnnee : '—'}</td>
         <td><span class="status-tag ${d.ouvert ? 'open' : 'closed'}">${d.ouvert ? 'Ouvert' : 'Fermé'}</span></td>
       `;
 
@@ -126,8 +127,9 @@ const DataTable = (() => {
     return [...data].sort((a, b) => {
       let va = a[sortKey];
       let vb = b[sortKey];
-      if (va == null) va = sortKey === 'capacite' ? -Infinity : '';
-      if (vb == null) vb = sortKey === 'capacite' ? -Infinity : '';
+      // null : dernier en capacité (desc), dernier en échéance (asc = plus proches d'abord)
+      if (va == null) va = sortKey === 'capacite' ? -Infinity : sortKey === 'echeanceAnnee' ? Infinity : '';
+      if (vb == null) vb = sortKey === 'capacite' ? -Infinity : sortKey === 'echeanceAnnee' ? Infinity : '';
 
       let cmp;
       if (typeof va === 'number' && typeof vb === 'number') cmp = va - vb;
@@ -189,8 +191,9 @@ const DataTable = (() => {
     if (currentData.length === 0) return;
 
     const headers = ['Base', 'Projet', 'Commune', 'Département', 'Région', 'Type',
-      'Capacité (GWh/an)', 'Unité capacité', 'Mise en service', 'Opérateur', 'Réseau / technologie',
-      'Statut', 'Latitude', 'Longitude', 'Précision géo'];
+      'Capacité (GWh/an)', 'Unité capacité', 'Mise en service',
+      'Échéance contrat estimée', 'Hypothèse durée contrat', 'Opérateur', 'Réseau / technologie',
+      'Statut', 'Latitude', 'Longitude', 'Précision géo', 'Lien Google Maps'];
 
     const rows = currentData.map(d => [
       d.base === 'cogen' ? 'Cogénération' : 'Injection',
@@ -198,11 +201,14 @@ const DataTable = (() => {
       d.capacite != null ? String(d.capacite).replace('.', ',') : '',
       CAP_UNITS[d.base] || '',
       d.dateMes || '',
+      d.echeanceAnnee != null ? d.echeanceAnnee : '',
+      d.echeanceHyp || '',
       d.operateur, d.reseau,
       d.ouvert ? 'Ouvert' : 'Fermé',
       d.lat != null ? String(d.lat).replace('.', ',') : '',
       d.lon != null ? String(d.lon).replace('.', ',') : '',
       d.geoPrecision || '',
+      (d.lat != null && d.lon != null) ? `https://www.google.com/maps?q=${d.lat},${d.lon}` : '',
     ]);
 
     const csvContent = [headers, ...rows]

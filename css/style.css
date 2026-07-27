@@ -229,6 +229,12 @@ button { font-family: inherit; }
 }
 .filter-label strong { color: var(--text); font-weight: 700; }
 
+.filter-hint {
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 .filter-label-row {
   display: flex;
   justify-content: space-between;
@@ -519,7 +525,9 @@ button { font-family: inherit; }
 .popup-grid { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; }
 .popup-grid dt { color: var(--muted); }
 .popup-grid dd { font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
-.popup-foot { margin-top: 9px; display: flex; gap: 6px; align-items: center; }
+.popup-foot { margin-top: 9px; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.popup-link { color: var(--teal); font-weight: 500; text-decoration: none; }
+.popup-link:hover { text-decoration: underline; }
 
 .leaflet-control-zoom a {
   background: var(--panel) !important;

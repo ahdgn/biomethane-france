@@ -82,6 +82,7 @@ const CONFIG = (() => {
         type: d.filiere === 'Bioénergies'
           ? 'Cogénération — Bioénergies'
           : 'Cogénération — Autres filières',
+        filiere: d.filiere || '',
         capacite: d.energie_gwh_an || 0, // GWh électriques/an
         annee: d.annee_mes || null,
         dateMes: d.date_mes || null,
@@ -118,6 +119,31 @@ const CONFIG = (() => {
 
   const typeColor = (type) => TYPE_COLORS[type] || TYPE_FALLBACK;
 
+  /* ---- Échéance de contrat estimée ----
+     Durées vérifiées (Run 1, 27/07/2026) :
+     · Injection : tarif OA 15 ans (arrêté du 13/12/2021 et prédécesseurs).
+     · Cogé biogaz (Bioénergies) : 20 ans — BG16 (arrêté du 13/12/2016, abrogé
+       par l'arrêté du 08/09/2025) ; BG11/BG06 prolongés de 15 à 20 ans par
+       l'arrêté du 24/02/2017.
+     · Cogé gaz naturel (Thermique non renouvelable) : C13 = 12 ans (CODOA
+       avant le 28/05/2016), C16 = 15 ans (2016 → abrogation 21/02/2021).
+     Rattachement C13/C16 par année de MES (heuristique, à confirmer site
+     par site) ; pas d'hypothèse pour les autres cas. */
+  function echeance(d) {
+    if (!d.annee) return { annee: null, hyp: null };
+    if (d.base === 'injection') {
+      return { annee: d.annee + 15, hyp: 'tarif OA injection — 15 ans' };
+    }
+    if (d.type === 'Cogénération — Bioénergies') {
+      return { annee: d.annee + 20, hyp: 'contrat biogaz BG — 20 ans (BG16 ; BG11/BG06 prolongés, arrêté du 24/02/2017)' };
+    }
+    if ((d.filiere || '') === 'Thermique non renouvelable') {
+      if (d.annee <= 2016) return { annee: d.annee + 12, hyp: 'contrat C13 — 12 ans (gaz naturel, à confirmer)' };
+      if (d.annee <= 2021) return { annee: d.annee + 15, hyp: 'contrat C16 — 15 ans (gaz naturel, à confirmer)' };
+    }
+    return { annee: null, hyp: null };
+  }
+
   return { PALETTE, TYPE_COLORS, TYPE_FALLBACK, DATASETS, CAP_UNITS, SOURCE_NOTE,
-           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor };
+           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, echeance };
 })();
