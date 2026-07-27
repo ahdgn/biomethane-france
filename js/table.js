@@ -27,6 +27,15 @@ const DataTable = (() => {
     th.dataset.sort = 'base';
     th.textContent = 'Base';
     row.insertBefore(th, row.firstElementChild);
+
+    // unités hétérogènes entre bases -> astérisque + note de bas de tableau
+    const capTh = document.querySelector('#data-table th[data-sort="capacite"]');
+    capTh.textContent = 'Capacité*';
+    capTh.title = 'Injection : GWh PCS/an · Cogénération : GWh électriques/an';
+    const note = document.createElement('span');
+    note.className = 'table-note';
+    note.textContent = '* injection : GWh/an · cogé : GWh él/an';
+    document.getElementById('table-range').after(note);
   }
 
   function bindEvents() {
