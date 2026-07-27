@@ -105,7 +105,16 @@ button { font-family: inherit; }
 
 .header-brand { display: flex; align-items: center; gap: 12px; }
 
-.header-brand .brand-logo { height: 26px; display: block; }
+.header-brand .brand-logo { height: 24px; display: block; }
+
+/* signature Nautilus : court trait teal à bouts ronds */
+.brand-sep {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--teal);
+  flex-shrink: 0;
+}
 
 .header-brand h1 {
   font-size: 17px;

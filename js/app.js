@@ -55,7 +55,7 @@
         ? 'points d\'injection' : r.ds.label.toLowerCase()}`).join(' · ');
     document.getElementById('footer-source').textContent = `Sources : ${SOURCE_NOTE}`;
     document.getElementById('footer-rights').textContent =
-      `© ${new Date().getFullYear()} — Tous droits réservés`;
+      `© ${new Date().getFullYear()} Nautilus — Tous droits réservés`;
 
     /* ---- Sidebar ---- */
     const sidebar = document.getElementById('sidebar');
