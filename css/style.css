@@ -72,6 +72,9 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* hauteur réelle de la fenêtre visible (barre d'adresse mobile) */
+  height: 100vh;
+  height: 100dvh;
 }
 
 button { font-family: inherit; }
@@ -549,7 +552,29 @@ button { font-family: inherit; }
 }
 .marker-cluster { background: none !important; }
 
+/* Voile derrière la sidebar mobile */
+.sidebar-backdrop {
+  display: none;
+}
+
 /* Légende carte */
+.map-legend-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.map-legend-toggle .chevron { color: var(--muted); font-size: 10px; transition: transform var(--transition); }
+.map-legend.collapsed .chevron { transform: rotate(-90deg); }
+.map-legend.collapsed .map-legend-body { display: none; }
+.map-legend.collapsed .map-legend-title { margin-bottom: 0; }
+
 .map-legend {
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--hairline);
@@ -918,7 +943,9 @@ button { font-family: inherit; }
 
 @media (max-width: 860px) {
   .kpi-strip { grid-template-columns: repeat(2, 1fr); }
-  .kpi-value { font-size: 18px; }
+  .kpi-card { padding: 8px 14px; }
+  .kpi-value { font-size: 17px; }
+  .kpi-label { font-size: 10px; }
 
   .sidebar {
     position: absolute;
@@ -926,9 +953,50 @@ button { font-family: inherit; }
     bottom: var(--footer-h);
     left: 0;
     z-index: 1050;
-    box-shadow: var(--shadow);
+    box-shadow: 0 8px 32px rgba(30, 66, 96, 0.25);
   }
+
+  /* voile cliquable derrière la sidebar ouverte */
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: var(--header-h) 0 var(--footer-h) 0;
+    background: rgba(30, 66, 96, 0.35);
+    z-index: 1040;
+    opacity: 1;
+    transition: opacity var(--transition);
+  }
+  .sidebar-backdrop[hidden] { display: none; }
 
   .bottom-panel { height: 300px; }
   .header-badge { display: none; }
+  .tab-content { padding: 10px; }
+  .chart-card { height: 220px; padding: 10px; }
+  .chart-card.chart-wide { height: 220px; }
+
+  .map-legend { max-width: 200px; font-size: 11px; }
+
+  .app-footer { font-size: 10px; padding: 0 10px; gap: 8px; }
+}
+
+@media (max-width: 640px) {
+  .header-meta { display: none; }
+  .header-brand h1 { font-size: 15px; }
+}
+
+/* Cibles tactiles confortables sur écran tactile */
+@media (pointer: coarse) {
+  .dual-range { height: 30px; }
+  .dual-range input[type="range"] { height: 30px; }
+  .dual-range input[type="range"]::-webkit-slider-thumb { width: 22px; height: 22px; }
+  .dual-range input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; }
+
+  .pagination button { min-width: 36px; height: 36px; }
+  .icon-btn { width: 40px; height: 40px; }
+  .segmented .seg-btn { padding: 9px 12px; }
+  .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; }
+  .checkbox-group label { padding: 7px 6px; }
+  .tab-btn { padding: 12px 16px; }
+
+  .panel-resizer { top: -8px; height: 16px; }
 }

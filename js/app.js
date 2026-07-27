@@ -60,10 +60,23 @@
     /* ---- Sidebar ---- */
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebar-toggle');
-    sidebarToggle.addEventListener('click', () => {
-      const collapsed = sidebar.classList.toggle('collapsed');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    const isMobile = () => window.matchMedia('(max-width: 860px)').matches;
+
+    function setSidebar(collapsed) {
+      sidebar.classList.toggle('collapsed', collapsed);
       sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+      backdrop.hidden = collapsed || !isMobile();
       setTimeout(() => { MapView.invalidateSize(); Charts.resize(); }, 200);
+    }
+    // sur mobile, la sidebar en surcouche démarre fermée
+    if (isMobile()) setSidebar(true);
+    sidebarToggle.addEventListener('click', () => setSidebar(!sidebar.classList.contains('collapsed')));
+    backdrop.addEventListener('click', () => setSidebar(true));
+    // sur mobile, un choix dans un sélecteur referme la surcouche pour montrer le résultat
+    // (pas les cases à cocher ni les curseurs, qu'on ajuste en plusieurs gestes)
+    sidebar.addEventListener('change', (e) => {
+      if (isMobile() && e.target.tagName === 'SELECT') setSidebar(true);
     });
 
     /* ---- Onglets (accessibles) ---- */
