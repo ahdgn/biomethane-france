@@ -117,6 +117,8 @@
     // hauteur mémorisée ignorée si inutilisable (< 120 px : panneau quasi fermé)
     const savedH = parseInt(localStorage.getItem('bmf-panel-h') || '', 10);
     panel.style.height = (savedH >= 120 ? savedH : defaultH()) + 'px';
+    // la carte vient de perdre la hauteur du panneau : on recadre sur la France
+    requestAnimationFrame(() => { MapView.invalidateSize(); MapView.fitFrance(); });
 
     function maxH() {
       return document.querySelector('.main-content').clientHeight - 160;

@@ -4,7 +4,8 @@
    ============================================ */
 
 const Filters = (() => {
-  const { fmtInt, fmtNum, escapeHtml, typeColor, DATASETS, CAP_UNITS, prospection1 } = CONFIG;
+  const { fmtInt, fmtNum, escapeHtml, typeColor, DATASETS, CAP_UNITS, prospection1,
+          YEAR_FLOOR, YEAR_FLOOR_LABEL } = CONFIG;
 
   const state = {
     base: '',        // '' = toutes les bases
@@ -19,7 +20,7 @@ const Filters = (() => {
     prospection: false, // filtre prospection 1 (périmètre thèse)
   };
 
-  const bounds = { yearMin: null, yearMax: null };
+  const bounds = { yearMin: null, yearMax: null, hasPre: false };
   let allData = [];
   let filteredData = [];
   let allTypes = [];
@@ -41,7 +42,10 @@ const Filters = (() => {
 
   function computeBounds() {
     const years = allData.map(d => d.annee).filter(Boolean);
-    bounds.yearMin = Math.min(...years);
+    // borne basse plafonnée à YEAR_FLOOR : posé au minimum, le curseur
+    // vaut « < 2000 » et n'exclut aucune MES ancienne (cf. applyFilters)
+    bounds.hasPre = years.some(y => y < YEAR_FLOOR);
+    bounds.yearMin = Math.max(Math.min(...years), YEAR_FLOOR);
     bounds.yearMax = Math.max(...years);
     state.yearMin = bounds.yearMin;
     state.yearMax = bounds.yearMax;
@@ -93,7 +97,8 @@ const Filters = (() => {
       input.min = bounds.yearMin;
       input.max = bounds.yearMax;
     });
-    document.getElementById('year-bound-min').textContent = bounds.yearMin;
+    document.getElementById('year-bound-min').textContent =
+      bounds.hasPre ? YEAR_FLOOR_LABEL : bounds.yearMin;
     document.getElementById('year-bound-max').textContent = bounds.yearMax;
   }
 
@@ -256,8 +261,10 @@ const Filters = (() => {
   }
 
   function updateYearUI() {
+    const atFloor = bounds.hasPre && state.yearMin === bounds.yearMin;
+    const minLabel = atFloor ? YEAR_FLOOR_LABEL : String(state.yearMin);
     document.getElementById('year-range-label').textContent =
-      state.yearMin === state.yearMax ? String(state.yearMin) : `${state.yearMin} – ${state.yearMax}`;
+      state.yearMin === state.yearMax ? minLabel : `${minLabel} – ${state.yearMax}`;
     const span = bounds.yearMax - bounds.yearMin || 1;
     const fill = document.getElementById('year-range-fill');
     fill.style.left = ((state.yearMin - bounds.yearMin) / span * 100) + '%';
@@ -297,6 +304,9 @@ const Filters = (() => {
   /* ---------------- filtrage ---------------- */
 
   function applyFilters() {
+    // curseur au minimum = borne « < 2000 » : aucune limite basse
+    const yearMin = state.yearMin === bounds.yearMin ? -Infinity : state.yearMin;
+
     filteredData = allData.filter(d => {
       if (state.prospection && !prospection1(d)) return false;
       if (state.base && d.base !== state.base) return false;
@@ -307,7 +317,7 @@ const Filters = (() => {
       }
       if (state.region && d.region !== state.region) return false;
       if (!state.types.has(d.type)) return false;
-      if (d.annee != null && (d.annee < state.yearMin || d.annee > state.yearMax)) return false;
+      if (d.annee != null && (d.annee < yearMin || d.annee > state.yearMax)) return false;
       if (state.operator && d.operateur !== state.operator) return false;
       if (state.window) {
         const e = d.echeanceAnnee;

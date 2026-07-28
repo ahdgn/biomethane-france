@@ -5,7 +5,7 @@
    ============================================ */
 
 const Charts = (() => {
-  const { PALETTE, fmtInt, fmtNum, typeColor, CAP_UNITS } = CONFIG;
+  const { PALETTE, fmtInt, fmtNum, typeColor, CAP_UNITS, YEAR_FLOOR, YEAR_FLOOR_LABEL } = CONFIG;
 
   let chartTimeline, chartTypes, chartRegions, chartDepartments;
   let lastData = [];
@@ -160,11 +160,16 @@ const Charts = (() => {
 
     const bases = [...new Set(withYear.map(d => d.base))];
     const years = withYear.map(d => d.annee);
-    const y0 = years.length ? Math.min(...years) : 2011;
+    // tout ce qui précède YEAR_FLOOR tient dans une barre « < 2000 »
+    // (registre cogé : quelques dizaines de MES jusqu'à 1939)
+    const hasPre = years.some(y => y < YEAR_FLOOR);
+    const y0 = years.length ? Math.max(Math.min(...years), YEAR_FLOOR) : 2011;
     const y1 = years.length ? Math.max(...years) : 2026;
-    // axe complet, années sans MES incluses (pas de distorsion temporelle)
-    const labels = [];
+    // axe complet à partir de 2000, années sans MES incluses
+    // (pas de distorsion temporelle)
+    const labels = hasPre ? [YEAR_FLOOR_LABEL] : [];
     for (let y = y0; y <= y1; y++) labels.push(y);
+    const bucketOf = (y) => (y < YEAR_FLOOR ? YEAR_FLOOR_LABEL : y);
 
     const metricOf = (d) => timelineOpts.metric === 'sites' ? 1 : (d.capacite || 0);
 
@@ -175,7 +180,7 @@ const Charts = (() => {
 
     const datasets = bases.map(base => {
       const byYear = Object.fromEntries(labels.map(y => [y, 0]));
-      withYear.filter(d => d.base === base).forEach(d => { byYear[d.annee] += metricOf(d); });
+      withYear.filter(d => d.base === base).forEach(d => { byYear[bucketOf(d.annee)] += metricOf(d); });
       let series = labels.map(y => byYear[y]);
       if (timelineOpts.cumul) {
         let acc = 0;
