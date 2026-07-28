@@ -101,6 +101,15 @@ const CONFIG = (() => {
   // Unité de capacité par base (les GWh injection ≠ GWh électriques)
   const CAP_UNITS = { injection: 'GWh/an', cogen: 'GWh él/an' };
 
+  /* ---- Plancher de l'axe temps ----
+     Le registre EDF OA remonte à 1939 (vieilles centrales thermiques à
+     vapeur : 57 des 63 cogés d'avant 2000 sont en gaz ou fioul). Ces MES
+     sont réelles, mais étaler l'axe sur 88 ans écrase la zone utile
+     (2011-2026). Tout ce qui précède est donc agrégé sous « < 2000 »,
+     dans le graphe comme dans le curseur de période. */
+  const YEAR_FLOOR = 2000;
+  const YEAR_FLOOR_LABEL = '< ' + YEAR_FLOOR;
+
   const SOURCE_NOTE = 'Registre ODRÉ (biométhane, 01/01/2025) · Registre EDF OA (cogénérations)';
 
   // ---- Formats français ----
@@ -166,5 +175,6 @@ const CONFIG = (() => {
   }
 
   return { PALETTE, TYPE_COLORS, TYPE_FALLBACK, DATASETS, CAP_UNITS, SOURCE_NOTE,
+           YEAR_FLOOR, YEAR_FLOOR_LABEL,
            fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, echeance, prospection1 };
 })();

@@ -18,10 +18,14 @@ const MapView = (() => {
 
   function init() {
     map = L.map('map', {
-      center: [46.6, 2.5],
+      center: FRANCE_BOUNDS.getCenter(),
       zoom: 6,
-      minZoom: 5,
+      // sur un écran de téléphone (carte ~300 px de haut), la France
+      // entière demande un zoom < 5 : le plancher doit descendre à 4
+      minZoom: 4,
       zoomControl: true,
+      // pas de zoom fractionnaire : cadrage au plus juste sur la France
+      zoomSnap: 0.25,
     });
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -43,7 +47,7 @@ const MapView = (() => {
       a.innerHTML = '⌂';
       L.DomEvent.on(a, 'click', (e) => {
         L.DomEvent.preventDefault(e);
-        map.fitBounds(FRANCE_BOUNDS, { padding: [10, 10] });
+        fitFrance();
       });
       return div;
     };
@@ -67,6 +71,12 @@ const MapView = (() => {
     map.addLayer(clusterGroup);
 
     addLegend();
+    // vue d'entrée : la France entière, quelle que soit la taille de l'écran
+    fitFrance();
+  }
+
+  function fitFrance() {
+    if (map) map.fitBounds(FRANCE_BOUNDS, { padding: [10, 10] });
   }
 
   /* Rayon proportionnel à la racine de la capacité (5 → 13 px) */
@@ -226,5 +236,5 @@ const MapView = (() => {
   }
 
   // popupHtml exposé : réutilisé pour la fiche site (one-pager) et les tests
-  return { init, update, focusOn, invalidateSize, popupHtml };
+  return { init, update, focusOn, invalidateSize, fitFrance, popupHtml };
 })();
