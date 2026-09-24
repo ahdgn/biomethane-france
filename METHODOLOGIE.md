@@ -354,6 +354,7 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
 | 24/09/2026 | Registre équipe Airtable (base France créée), panneau Qualifier, pipeline = projet renseigné, notes classées | Port de biomethane-germany, Daniel 09/09 et 21/09 | #17 |
 | 24/09/2026 | Lien Google Maps par recherche textuelle (site en vue satellite) | Constat AG | #20 |
 | 24/09/2026 | Position réelle et régime ICPE (Géorisques 2781), distances et score recalculés, retour arrière par script et tag | Décision AG (étape 10 élargie) | #22 |
+| 24/09/2026 | Lien Google Maps : position ICPE en premier quand elle existe ; nom masqué → nom de l'exploitant ICPE ; suppression du repli « méthanisation + commune » (renvoyait des voisins) ; sans ICPE et nom masqué → coordonnées « approximatives » seules | Constat AG | #23 |
 
 ## 7. Questions ouvertes
 
