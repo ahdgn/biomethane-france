@@ -191,19 +191,33 @@ le top : des unités territoriales ou de déchets ménagers (AMETYST Montpellier
 IDEX Amiens) scorent haut sur la taille ; le type d'intrants viendra du
 registre équipe (étape 8).
 
-## Étape 8 — feat : registre équipe Airtable et panneau Qualifier
+## Étape 8 — feat : registre équipe Airtable et panneau Qualifier (PR #17)
 
-- [ ] Port de `js/qualify.js`, `REGISTER.md`, `tools/sync_register.py` depuis
-      `biomethane-germany`
-- [ ] Clé : `id_unique_projet` (injection) ou nom d'installation (cogé) ;
-      champs : projet, statut relation, tags équipe (on connaît l'exploitant,
-      déjà travaillé sur le site, élus connus), difficulté raccordement,
-      part agricole du capital, régime ICPE, intrants, confiance, notes
-      catégorisées (intrants, opérateur gaz, permis, politique locale)
-- [ ] Base Airtable « Biomethane France Screening tool » à créer et semer
+- [x] Base Airtable **« Biomethane France Screening tool »** (`app2bwaGaaTnIBUVq`,
+      table Sites `tblbkofITxXCYaptN`) créée le 24/09/2026, vide. Clé = code
+      EIC (élec. biogaz) ou `id_unique_projet` (injection). Champs : base,
+      nom, commune, projet, statut relation, tags équipe, difficulté
+      raccordement, part agricole du capital, régime ICPE, intrants,
+      confiance, cinq notes classées (intrants, opérateur gaz, permis,
+      politique locale, libres). Schéma dans `REGISTER.md`.
+- [x] `js/qualify.js` : panneau latéral « ✎ Qualifier » depuis chaque fiche
+      (identité publique + score + réseau + coefficient, formulaire Airtable
+      pré-rempli). `tools/sync_register.py` : Airtable → `data/pipeline.json`.
+- [x] App : halo ambre pour les sites du pipeline (projet renseigné),
+      interrupteur « Pipeline Nautilus seulement », filtre « Statut de
+      relation », popup (projet, relation, connaissance équipe, capital,
+      ICPE, intrants, notes), 4 colonnes CSV (clé, projet, statut, tags).
+- [ ] **À faire par Ahmed (une fois)** : créer le formulaire partagé dans la
+      table Sites et coller son lien dans `REGISTER_FORM_URL` (`js/config.js`),
+      voir REGISTER.md. Tant que le lien est vide, le panneau explique que le
+      formulaire n'est pas branché.
+- [ ] Premières fiches : les sites qu'AdlF connaît (dizaine, action du 18/09)
+      et les 30 A de la zone test, à qualifier depuis l'app.
 
-Assurance : moyenne. Mécanique validée en Allemagne le 18/09 ; dépend de la
-création de la base (connecteur Airtable en écriture).
+Assurance : moyenne-haute. Mécanique identique à l'outil allemand (validée le
+18/09) ; vérification en local avec une fiche de test (halo, filtres, popup,
+panneau), retirée avant commit. Le registre reste vide tant que l'équipe ne
+l'alimente pas.
 
 ## Étape 9 — feat : enrichissement Pappers (étage 2)
 

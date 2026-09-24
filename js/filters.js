@@ -24,6 +24,8 @@ const Filters = (() => {
     radius: null,       // null | { lat, lon, km, label } : recherche par rayon
     grid: '',           // '' | '2' | '5' | '10' | 'far' : distance au réseau GRDF (élec. biogaz)
     prio: '',           // '' | 'A' | 'AB' | 'ABC' : priorité du score v2 (sites scorés seulement)
+    pipeline: false,    // sites du pipeline Nautilus uniquement (registre, projet renseigné)
+    relation: '',       // '' | owners | feedstock | rejected | evaluating | unknown
   };
   const RADIUS_MIN = 5, RADIUS_MAX = 150;
   const POWER_VALUES = ['250', '500', '1000'];
@@ -156,6 +158,8 @@ const Filters = (() => {
     if (p.has('c') && ['095', '08'].includes(p.get('c'))) state.cpb = p.get('c');
     if (p.has('g') && gridKeys().includes(p.get('g'))) state.grid = p.get('g');
     if (p.has('pr') && ['A', 'AB', 'ABC'].includes(p.get('pr'))) state.prio = p.get('pr');
+    if (p.get('pl') === '1') state.pipeline = true;
+    if (p.has('ev') && ['owners', 'feedstock', 'rejected', 'evaluating', 'unknown'].includes(p.get('ev'))) state.relation = p.get('ev');
     if (p.get('p') === '1' || p.get('p') === '2') state.prospection = true; // p=1 : anciens liens
     if (p.get('z') === '1') state.zone = true;
     if (p.has('k') && POWER_VALUES.includes(p.get('k'))) state.power = p.get('k');
@@ -187,6 +191,8 @@ const Filters = (() => {
     if (state.cpb) p.set('c', state.cpb);
     if (state.grid) p.set('g', state.grid);
     if (state.prio) p.set('pr', state.prio);
+    if (state.pipeline) p.set('pl', '1');
+    if (state.relation) p.set('ev', state.relation);
     if (state.prospection) p.set('p', '2');
     if (state.zone) p.set('z', '1');
     if (state.power) p.set('k', state.power);
@@ -298,6 +304,15 @@ const Filters = (() => {
       syncSegmented('filter-window', 'window', state.window);
       applyFilters();
     });
+    // Registre équipe : pipeline et statut de relation
+    document.getElementById('filter-pipeline').addEventListener('change', (e) => {
+      state.pipeline = e.target.checked;
+      applyFilters();
+    });
+    document.getElementById('filter-eval').addEventListener('change', (e) => {
+      state.relation = e.target.value;
+      applyFilters();
+    });
     // Priorité du score v2
     document.getElementById('filter-prio').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-prio]');
@@ -390,6 +405,8 @@ const Filters = (() => {
     syncSegmented('filter-cpb', 'cpb', state.cpb);
     syncSegmented('filter-grid', 'grid', state.grid);
     syncSegmented('filter-prio', 'prio', state.prio);
+    document.getElementById('filter-pipeline').checked = state.pipeline;
+    document.getElementById('filter-eval').value = state.relation;
     document.getElementById('filter-prospection').checked = state.prospection;
     document.getElementById('filter-zone').checked = state.zone;
     syncSegmented('filter-power', 'power', state.power);
@@ -408,6 +425,8 @@ const Filters = (() => {
     if (state.cpb) n++;
     if (state.grid) n++;
     if (state.prio) n++;
+    if (state.pipeline) n++;
+    if (state.relation) n++;
     if (state.prospection) n++;
     if (state.zone) n++;
     if (state.power) n++;
@@ -443,6 +462,8 @@ const Filters = (() => {
       if (d.annee != null && (d.annee < yearMin || d.annee > state.yearMax)) return false;
       if (state.operator && d.operateur !== state.operator) return false;
       if (state.window && d.echeanceTranche !== state.window) return false; // pas d'estimation -> hors fenêtre
+      if (state.pipeline && !d.inPipeline) return false;
+      if (state.relation && d.evalStatus !== state.relation) return false;
       // priorité du score v2 : seuls les sites scorés (périmètre) passent
       if (state.prio) {
         if (!d.priorite || !state.prio.includes(d.priorite)) return false;
@@ -521,6 +542,8 @@ const Filters = (() => {
     state.cpb = '';
     state.grid = '';
     state.prio = '';
+    state.pipeline = false;
+    state.relation = '';
     state.prospection = false;
     state.zone = false;
     state.power = '';
