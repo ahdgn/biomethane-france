@@ -5,7 +5,7 @@ choix de design : ce que l'outil filtre, pourquoi, sur quelle donnée et sur
 quelle source. Il est tenu à jour à chaque PR qui modifie une règle. Le plan de
 versions est dans `BACKLOG.md`, les seuils dans `tools/screening_params.json`.
 
-Dernière mise à jour : 24 septembre 2026 (PR #10, filtre prospection v2).
+Dernière mise à jour : 24 septembre 2026 (PR #13, fenêtre CPB 0,95 et tranches d'échéance).
 
 ---
 
@@ -144,12 +144,52 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
 - **Effet** : 287 sites d'injection et 169 cogénérations (Grand Est 113,
   Normandie 37, Hauts-de-France 19).
 
-### 4.6 Ce qui n'est volontairement pas filtré
+### 4.6 Tranches d'échéance de contrat
+
+- **Règle** : l'échéance estimée (année de MES + durée réglementaire :
+  15 ans injection, 20 ans cogé biogaz, 12 ou 15 ans gaz naturel) est classée
+  en quatre tranches : ≤ 2026, 2027-2028, 2029-2030, > 2030. Filtre exclusif ;
+  un site sans estimation est exclu quand une tranche est choisie.
+- **Donnée** : `annee_mes` des deux registres ; durées documentées dans
+  `config.js` (`echeance`). Tranches dans `screening_params.json`.
+- **Justification** : BC 14/09/2026, section 7 : « combien arrivent en fin de
+  tarif dans 1, 2, 5, 10 ans ; pas tous adressables tout de suite ». Les
+  tranches suivent le calendrier réglementaire : fin du guichet (2026),
+  passerelle CPB sans indemnité (fin 2027), butoir du coefficient 0,95 (fin
+  2029).
+- **Limite** : la durée de 20 ans est une hypothèse (BG16 ; BG11 et BG06
+  prolongés par l'arrêté du 24/02/2017) ; avenants et renégociations non
+  captés ; à confirmer site par site en entretien.
+
+### 4.7 Coefficient CPB et fenêtre 0,95
+
+- **Règle** : pour une cogénération biogaz avec année de MES, l'outil calcule
+  l'âge à une année de conversion par défaut (2028) et en déduit le
+  coefficient CPB estimé : 1 avant 15 ans, 0,95 entre 15 et 30 ans si la
+  première injection intervient avant le 31/12/2029, 0,8 sinon. Il calcule
+  aussi la fenêtre d'années où 0,95 est atteignable : de max(année courante,
+  MES + 15) à min(2029, MES + 30). Filtre « 0,95 atteignable » / « 0,8
+  seulement » ; colonne du tableau ; six colonnes CSV. Sans effet sur les
+  points d'injection.
+- **Donnée** : `annee_mes` du registre EDF OA ; paramètres dans
+  `screening_params.json` (`cpb`).
+- **Justification** : le coefficient fixe le nombre de CPB par MWh injecté,
+  donc directement le revenu d'une conversion (16 % d'écart entre 0,95 et
+  0,8). La date butoir borne le calendrier du pipeline brownfield.
+- **Source** : arrêté du 26/12/2025 modifiant l'arrêté du 6 juillet 2024
+  (CPB), délibération CRE n° 2025-235 du 10/10/2025 ; annexe réglementaire
+  24/09/2026, section 3.4.
+- **Effet** (périmètre v2) : 27 sites avec 0,95 atteignable, 296 hors
+  d'atteinte, dont 300 sites de moins de 15 ans en 2028 (coefficient 1).
+- **Limite** : le coefficient 1 pour une cogé convertie avant 15 ans est
+  l'application de la règle générale, à confirmer ; l'année de conversion
+  par défaut est un paramètre à valider avec AdlF.
+
+### 4.8 Ce qui n'est volontairement pas filtré
 
 | Critère | Pourquoi pas de filtre dur | Traitement prévu |
 |---|---|---|
 | Distance au réseau gaz (4 à 5 km) | Pas de tracé en open data ; cogés au centroïde de commune | Proxy à l'étape 6 (commune desservie, distance au point d'injection le plus proche), colonne et non exclusion |
-| Fenêtre d'échéance et âge du site (coefficient 0,95) | Règle claire, donnée incertaine (70 cogés sans MES) | Étape 4, drapeaux et tranches |
 | Structure du capital, caractère agricole | Nécessite Pappers (payant) | Étape 9, shortlist seulement |
 | Intrants et C-score | Pas de donnée publique au niveau du site | Registre équipe, étape 8 |
 | Régime ICPE, zonage PLU | Rapprochements incertains | Étape 10, site par site |
@@ -186,8 +226,19 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
 | 18/09/2026 | Zone test Nord, Est, Normandie ; AdlF identifie une dizaine de sites ; critère raccordement déterminant | Reprise biométhane France | backlog |
 | 24/09/2026 | Annexe réglementaire : seuil 13 GWh, fin du guichet, coefficient 0,95, 51/49 agricole | Recherche AG / Claude | #9 |
 | 24/09/2026 | Suppression du plafond 25 GWh ; puissance à la place de l'énergie ; zone test en filtre et non en score | AG | #10 |
+| 24/09/2026 | Vue satellite, rayon, contrôle géométrique (règle des 2 km), millésimes en données | Port de biomethane-germany | #12 |
+| 24/09/2026 | Tranches d'échéance BC ; coefficient CPB estimé et fenêtre 0,95 à conversion 2028 | Arrêté 26/12/2025, BC 14/09 | #13 |
 
 ## 7. Questions ouvertes
+
+- Le registre EDF OA compte peu de cogénérations biogaz antérieures à 2015
+  (27 sur 323 dans le périmètre) et beaucoup de 2018-2021 (213), sous contrat
+  jusqu'en 2038-2041. Parc ancien sous-représenté, ou vague de fins de contrat
+  plus tardive que le discours de la filière ? À croiser avec un second
+  registre à l'étape 5 et à discuter avec AdlF. Conséquence possible : la
+  cible brownfield se définit par l'arbitrage économique du producteur (sortie
+  anticipée sans pénalité, coefficient 1 avant 15 ans) plus que par la fin de
+  contrat.
 
 - 31 méthaniseurs ≥ 1 MWé au registre contre « une poignée » selon BC :
   sites territoriaux ou industriels inclus, moteurs cumulés, ou périmètre

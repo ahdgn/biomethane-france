@@ -34,6 +34,12 @@
           const e = CONFIG.echeance(r);
           r.echeanceAnnee = e.annee;
           r.echeanceHyp = e.hyp;
+          const t = CONFIG.echeanceTranche(e.annee);
+          r.echeanceTranche = t ? t.key : null;
+          r.echeanceTrancheLabel = t ? t.label : null;
+          const c = CONFIG.cpbInfo(r);
+          r.cpb = c;
+          r.cpbCoef = c ? c.coef : null;
           return r;
         });
         return { ds, records };

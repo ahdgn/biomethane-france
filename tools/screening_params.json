@@ -10,10 +10,10 @@
     "puissance_kw": { "plancher": 250, "cible": 500, "priorite": 1000 },
     "duree_contrat_ans": 20,
     "echeance_tranches": [
-      { "label": "≤ 2026", "max": 2026 },
-      { "label": "2027-2028", "min": 2027, "max": 2028 },
-      { "label": "2029-2030", "min": 2029, "max": 2030 },
-      { "label": "> 2030", "min": 2031 }
+      { "key": "le2026", "label": "≤ 2026", "max": 2026 },
+      { "key": "2027-2028", "label": "2027-2028", "min": 2027, "max": 2028 },
+      { "key": "2029-2030", "label": "2029-2030", "min": 2029, "max": 2030 },
+      { "key": "gt2030", "label": "> 2030", "min": 2031 }
     ]
   },
 

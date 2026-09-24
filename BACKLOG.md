@@ -74,17 +74,39 @@ Assurance : très élevée. Code porté de l'outil allemand ; contrôle géomét
 sans surprise. Vérification : app en local, rayon 50 km autour de Loudéac
 (28 injection, 15 cogé), bascule satellite, réinitialisation.
 
-## Étape 4 — feat : fenêtre CPB 0,95 et tranches d'échéance
+## Étape 4 — feat : fenêtre CPB 0,95 et tranches d'échéance (PR #13)
 
-- [ ] Âge de l'installation à une date de conversion paramétrable (défaut 2028)
-- [ ] Drapeau « coefficient 0,95 possible » : 15 ≤ âge ≤ 30 ans à la conversion
-      et conversion avant le 31/12/2029, donc MES entre 1997 et 2014 pour une
-      conversion en 2029
-- [ ] Tranche d'échéance de contrat : ≤ 2026, 2027-2028, 2029-2030, > 2030
-- [ ] Popup, tableau et CSV enrichis
+- [x] Âge de l'installation à l'année de conversion par défaut (2028, paramètre)
+      et coefficient CPB estimé : 1 avant 15 ans, 0,95 entre 15 et 30 ans avec
+      conversion avant le 31/12/2029, 0,8 sinon
+- [x] Fenêtre « 0,95 atteignable » : première année = max(année courante,
+      MES + 15), dernière = min(2029, MES + 30) ; atteignable si première ≤
+      dernière (soit MES entre 1996 et 2014)
+- [x] Tranches d'échéance lues dans `screening_params.json` (≤ 2026,
+      2027-2028, 2029-2030, > 2030) ; anciens liens `w=echue|2026-2029|2030+`
+      convertis
+- [x] Filtre « Coefficient CPB » (tous / 0,95 atteignable / 0,8 seulement),
+      popup, colonne du tableau, 6 colonnes CSV
+- Chiffres (périmètre v2, 323 cogés biogaz ≥ 250 kWé, toutes avec date de
+  MES) : 0,95 atteignable pour **27 sites** seulement ; 296 hors d'atteinte,
+  dont 300 sites qui auraient un coefficient 1 en 2028 parce qu'ils ont moins
+  de 15 ans. Tranches d'échéance (MES + 20 ans) : ≤ 2026 : 1 ; 2027-2028 : 2 ;
+  2029-2030 : 8 ; > 2030 : 312.
+- **Constat à discuter avec AdlF** : le registre EDF OA est dominé par des
+  cogénérations récentes (2018-2021 : 213 des 323 sites du périmètre), sous
+  contrat jusqu'en 2038-2041. Les cogés « historiques » 2008-2014 sont rares
+  (27). Soit le parc ancien est sous-représenté dans ce registre (à croiser
+  avec un autre registre, étape 5), soit la vague de fins de contrat est
+  beaucoup plus tardive que le discours « 1 000 cogés en fin de tarif ». Dans
+  les deux cas, la sortie anticipée sans pénalité (arrêté du 08/09/2025) et
+  le coefficient 1 des sites de moins de 15 ans changent la lecture : la
+  cible n'est pas la fin de contrat, c'est l'arbitrage économique du
+  producteur.
 
 Assurance : élevée sur la règle (arrêté du 26/12/2025), moyenne sur la donnée
-(70 cogés sans date de MES ; durée BG 20 ans = hypothèse, avenants non captés).
+(durée BG 20 ans = hypothèse, avenants non captés ; coefficient 1 avant 15 ans
+à confirmer pour une cogé convertie). Vérification : comptages Python = app,
+popup, tableau, liens v1.
 
 ## Étape 5 — data : rafraîchissement des registres
 

@@ -10,7 +10,7 @@
   <!-- Librairies vendorisées (pas de CDN, pas de fonte externe) -->
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
-  <link rel="stylesheet" href="css/style.css?v=20260924-2">
+  <link rel="stylesheet" href="css/style.css?v=20260924-3">
 </head>
 <body>
 
@@ -142,13 +142,19 @@
       <!-- Fenêtre de décision (échéance de contrat estimée) -->
       <div class="filter-group">
         <span class="filter-label" id="label-window">Échéance de contrat estimée</span>
-        <div class="segmented" id="filter-window" role="group" aria-labelledby="label-window">
-          <button class="seg-btn" data-window="" aria-pressed="true">Toutes</button>
-          <button class="seg-btn" data-window="echue" aria-pressed="false">Échue</button>
-          <button class="seg-btn" data-window="2026-2029" aria-pressed="false">2026–29</button>
-          <button class="seg-btn" data-window="2030+" aria-pressed="false">2030+</button>
+        <div class="segmented" id="filter-window" role="group" aria-labelledby="label-window"></div>
+        <span class="filter-hint">Tranches BC 14/09/2026. Estimation : injection 15 ans · cogé biogaz 20 ans · gaz naturel C13/C16 12/15 ans ; sites sans date de MES exclus quand une tranche est choisie.</span>
+      </div>
+
+      <!-- Coefficient CPB (cogénérations biogaz) -->
+      <div class="filter-group">
+        <span class="filter-label" id="label-cpb">Coefficient CPB (cogé biogaz)</span>
+        <div class="segmented" id="filter-cpb" role="group" aria-labelledby="label-cpb">
+          <button class="seg-btn" data-cpb="" aria-pressed="true">Tous</button>
+          <button class="seg-btn" data-cpb="095" aria-pressed="false">0,95 atteignable</button>
+          <button class="seg-btn" data-cpb="08" aria-pressed="false">0,8 seulement</button>
         </div>
-        <span class="filter-hint">Estimation : injection 15 ans · cogé biogaz 20 ans · gaz naturel C13/C16 12/15 ans</span>
+        <span class="filter-hint">Arrêté du 26/12/2025 : 0,95 CPB/MWh si conversion entre 15 et 30 ans d'âge et première injection avant le 31/12/2029, sinon 0,8. Sans effet sur les points d'injection.</span>
       </div>
 
       <!-- Opérateur réseau -->
@@ -265,6 +271,8 @@
                   <th scope="col" data-sort="dateMes">Mise en service</th>
                   <th scope="col" data-sort="echeanceAnnee" class="col-num"
                       title="Échéance de contrat estimée — injection 15 ans · cogé biogaz 20 ans · gaz naturel C13/C16 12/15 ans">Échéance (est.)</th>
+                  <th scope="col" data-sort="cpbCoef" class="col-num"
+                      title="Coefficient CPB estimé à l'année de conversion par défaut (cogé biogaz) — arrêté du 26/12/2025">Coef. CPB</th>
                   <th scope="col" data-sort="ouvert">Statut</th>
                 </tr>
               </thead>
@@ -293,11 +301,11 @@
   <script src="vendor/chartjs/chart.umd.min.js"></script>
 
   <!-- App -->
-  <script src="js/config.js?v=20260924-2"></script>
-  <script src="js/filters.js?v=20260924-2"></script>
-  <script src="js/map.js?v=20260924-2"></script>
-  <script src="js/charts.js?v=20260924-2"></script>
-  <script src="js/table.js?v=20260924-2"></script>
-  <script src="js/app.js?v=20260924-2"></script>
+  <script src="js/config.js?v=20260924-3"></script>
+  <script src="js/filters.js?v=20260924-3"></script>
+  <script src="js/map.js?v=20260924-3"></script>
+  <script src="js/charts.js?v=20260924-3"></script>
+  <script src="js/table.js?v=20260924-3"></script>
+  <script src="js/app.js?v=20260924-3"></script>
 </body>
 </html>

@@ -47,7 +47,7 @@ const DataTable = (() => {
         } else {
           sortKey = key;
           // premier clic : ordre le plus utile selon la colonne
-          sortDir = (key === 'capacite' || key === 'dateMes' || key === 'ouvert') ? 'desc' : 'asc';
+          sortDir = (key === 'capacite' || key === 'dateMes' || key === 'ouvert' || key === 'cpbCoef') ? 'desc' : 'asc';
         }
         updateSortUI();
         render();
@@ -108,6 +108,7 @@ const DataTable = (() => {
         <td class="col-num" title="${unit}">${fmtNum(d.capacite, 2)}</td>
         <td>${fmtDate(d.dateMes)}</td>
         <td class="col-num" title="${escapeHtml(d.echeanceHyp || 'estimation non disponible')}">${d.echeanceAnnee != null ? d.echeanceAnnee : '—'}</td>
+        <td class="col-num" title="${d.cpb ? escapeHtml(d.cpb.atteignable ? `0,95 atteignable de ${d.cpb.first} à ${d.cpb.last}` : `0,95 hors d'atteinte (âge ${d.cpb.ageConv} ans en ${d.cpb.conv})`) : 'cogé biogaz seulement'}">${d.cpbCoef != null ? fmtNum(d.cpbCoef, 2) : '—'}</td>
         <td><span class="status-tag ${d.ouvert ? 'open' : 'closed'}">${d.ouvert ? 'Ouvert' : 'Fermé'}</span></td>
       `;
 
@@ -128,8 +129,8 @@ const DataTable = (() => {
       let va = a[sortKey];
       let vb = b[sortKey];
       // null : dernier en capacité (desc), dernier en échéance (asc = plus proches d'abord)
-      if (va == null) va = sortKey === 'capacite' ? -Infinity : sortKey === 'echeanceAnnee' ? Infinity : '';
-      if (vb == null) vb = sortKey === 'capacite' ? -Infinity : sortKey === 'echeanceAnnee' ? Infinity : '';
+      if (va == null) va = sortKey === 'capacite' || sortKey === 'cpbCoef' ? -Infinity : sortKey === 'echeanceAnnee' ? Infinity : '';
+      if (vb == null) vb = sortKey === 'capacite' || sortKey === 'cpbCoef' ? -Infinity : sortKey === 'echeanceAnnee' ? Infinity : '';
 
       let cmp;
       if (typeof va === 'number' && typeof vb === 'number') cmp = va - vb;
@@ -192,7 +193,9 @@ const DataTable = (() => {
 
     const headers = ['Base', 'Projet', 'Commune', 'Département', 'Région', 'Type',
       'Capacité (GWh/an)', 'Unité capacité', 'Mise en service',
-      'Échéance contrat estimée', 'Hypothèse durée contrat', 'Opérateur', 'Réseau / technologie',
+      'Échéance contrat estimée', 'Tranche échéance', 'Hypothèse durée contrat',
+      'Âge à la conversion (année par défaut)', 'Coefficient CPB estimé', 'Fenêtre 0,95 (première année)', 'Fenêtre 0,95 (dernière année)',
+      'Opérateur', 'Réseau / technologie',
       'Statut', 'Latitude', 'Longitude', 'Précision géo', 'Lien Google Maps'];
 
     const rows = currentData.map(d => [
@@ -202,7 +205,12 @@ const DataTable = (() => {
       CAP_UNITS[d.base] || '',
       d.dateMes || '',
       d.echeanceAnnee != null ? d.echeanceAnnee : '',
+      d.echeanceTrancheLabel || '',
       d.echeanceHyp || '',
+      d.cpb ? `${d.cpb.ageConv} ans en ${d.cpb.conv}` : '',
+      d.cpbCoef != null ? String(d.cpbCoef).replace('.', ',') : '',
+      d.cpb && d.cpb.atteignable ? d.cpb.first : '',
+      d.cpb && d.cpb.atteignable ? d.cpb.last : '',
       d.operateur, d.reseau,
       d.ouvert ? 'Ouvert' : 'Fermé',
       d.lat != null ? String(d.lat).replace('.', ',') : '',

@@ -159,19 +159,73 @@ const CONFIG = (() => {
      inaccessible. Sources : BC 14/09/2026, AdlF 18/09/2026, annexe
      réglementaire 24/09/2026. */
   const PARAMS = {
-    cogen: { puissance_kw: { plancher: 250, cible: 500, priorite: 1000 } },
+    cogen: {
+      puissance_kw: { plancher: 250, cible: 500, priorite: 1000 },
+      echeance_tranches: [
+        { key: 'le2026', label: '≤ 2026', max: 2026 },
+        { key: '2027-2028', label: '2027-2028', min: 2027, max: 2028 },
+        { key: '2029-2030', label: '2029-2030', min: 2029, max: 2030 },
+        { key: 'gt2030', label: '> 2030', min: 2031 },
+      ],
+    },
     injection: { types: ['Agricole autonome', 'Agricole territorial', 'Industriel territorial'],
                  capacite_gwh_an: { min: 5, max: null } },
     geographie: { zone_test: ['Hauts-de-France', 'Grand Est', 'Normandie'] },
+    cpb: { coefficient_majore: 0.95, coefficient_base: 0.8, age_min_ans: 15, age_max_ans: 30,
+           date_butoir_injection: '2029-12-31', annee_conversion_defaut: 2028 },
   };
   function setParams(p) {
     if (!p) return;
     if (p.cogen && p.cogen.puissance_kw) PARAMS.cogen.puissance_kw = p.cogen.puissance_kw;
+    if (p.cogen && p.cogen.echeance_tranches) PARAMS.cogen.echeance_tranches = p.cogen.echeance_tranches;
     if (p.injection) {
       if (p.injection.types) PARAMS.injection.types = p.injection.types;
       if (p.injection.capacite_gwh_an) PARAMS.injection.capacite_gwh_an = p.injection.capacite_gwh_an;
     }
     if (p.geographie && p.geographie.zone_test) PARAMS.geographie.zone_test = p.geographie.zone_test;
+    if (p.cpb) Object.assign(PARAMS.cpb, p.cpb);
+  }
+
+  /* ---- Tranche d'échéance de contrat ----
+     Regroupe l'échéance estimée (année de MES + durée réglementaire) selon
+     les tranches de tools/screening_params.json. BC 14/09/2026 : « combien
+     arrivent en fin de tarif dans 1, 2, 5, 10 ans ». Retourne { key, label }
+     ou null si pas d'estimation. */
+  function echeanceTranche(annee) {
+    if (annee == null) return null;
+    const t = PARAMS.cogen.echeance_tranches.find(tr =>
+      (tr.min == null || annee >= tr.min) && (tr.max == null || annee <= tr.max));
+    return t ? { key: t.key, label: t.label } : null;
+  }
+
+  /* ---- Coefficient CPB d'une cogénération convertie ----
+     Arrêté du 26/12/2025 modifiant l'arrêté du 6 juillet 2024 : une
+     installation de méthanisation ayant bénéficié d'un contrat historique,
+     âgée de plus de 15 ans et de 30 ans au plus, dont la première injection
+     intervient avant le 31/12/2029, reçoit 0,95 CPB par MWh injecté ; 0,8
+     au-delà de 30 ans (et, en règle générale, 0,8 pour toute installation de
+     plus de 15 ans). Avant 15 ans, le coefficient général de 1 s'applique
+     (cas rare, à confirmer site par site).
+     Le calcul est fait à l'année de conversion par défaut (paramètre) et
+     donne aussi la fenêtre d'années où 0,95 est atteignable :
+       première année = max(année courante, MES + 15)
+       dernière année = min(2029, MES + 30)
+     Uniquement pour les cogénérations biogaz avec année de MES. */
+  function cpbInfo(d) {
+    if (d.type !== 'Cogénération — Bioénergies' || !d.annee) return null;
+    const c = PARAMS.cpb;
+    const butoir = parseInt(String(c.date_butoir_injection).slice(0, 4), 10);
+    const conv = c.annee_conversion_defaut;
+    const now = new Date().getFullYear();
+    const ageConv = conv - d.annee;
+    let coef;
+    if (ageConv < c.age_min_ans) coef = 1;
+    else if (ageConv <= c.age_max_ans && conv <= butoir) coef = c.coefficient_majore;
+    else coef = c.coefficient_base;
+    const first = Math.max(now, d.annee + c.age_min_ans);
+    const last = Math.min(butoir, d.annee + c.age_max_ans);
+    const atteignable = first <= last;
+    return { ageConv, coef, conv, first, last, atteignable };
   }
 
   /* ---- Filtre prospection v2 ----
@@ -210,5 +264,6 @@ const CONFIG = (() => {
 
   return { PALETTE, TYPE_COLORS, TYPE_FALLBACK, DATASETS, CAP_UNITS, SOURCE_NOTE,
            YEAR_FLOOR, YEAR_FLOOR_LABEL, PARAMS, setParams,
-           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, echeance, prospection2, zoneTest };
+           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, echeance, echeanceTranche, cpbInfo,
+           prospection2, zoneTest };
 })();
