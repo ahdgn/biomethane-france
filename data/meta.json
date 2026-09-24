@@ -15,5 +15,11 @@
     "data_processed": "2026-09-10",
     "records": 1225,
     "geo": "centroïde de commune (geo.api.gouv.fr, code INSEE)"
+  },
+  "reseau": {
+    "grdf": "Cartographie du réseau GRDF en service (opendata.grdf.fr, 24/03/2025), distance minimale à vol d'oiseau, réseaux propane exclus, rayon de recherche 15 km",
+    "zonages": "ODRÉ, cartographie d'accès aux réseaux méthane renouvelable (zonages de raccordement, 15/12/2020)",
+    "injection_proche": "distance au point d'injection ODRÉ le plus proche (haversine)",
+    "enrichissement": "2026-09-24"
   }
 }

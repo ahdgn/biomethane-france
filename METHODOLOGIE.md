@@ -5,7 +5,7 @@ choix de design : ce que l'outil filtre, pourquoi, sur quelle donnée et sur
 quelle source. Il est tenu à jour à chaque PR qui modifie une règle. Le plan de
 versions est dans `BACKLOG.md`, les seuils dans `tools/screening_params.json`.
 
-Dernière mise à jour : 24 septembre 2026 (PR #14, rafraîchissement des registres ODRÉ et périmètre sur code combustible).
+Dernière mise à jour : 24 septembre 2026 (PR #15, distance au réseau GRDF et zonages de raccordement).
 
 ---
 
@@ -197,11 +197,41 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
   l'application de la règle générale, à confirmer ; l'année de conversion
   par défaut est un paramètre à valider avec AdlF.
 
-### 4.8 Ce qui n'est volontairement pas filtré
+### 4.8 Distance au réseau GRDF, injection la plus proche, zonages
+
+- **Règle** : pour chaque installation électrique biogaz, distance minimale à
+  vol d'oiseau entre le centroïde de sa commune et le tronçon GRDF en service
+  le plus proche (réseaux propane exclus, rayon de recherche 15 km). Filtre
+  par paliers ≤ 2 / ≤ 5 / ≤ 10 km ou « > 10 km / inconnue ». Sans effet sur
+  les points d'injection. En complément : distance au point d'injection ODRÉ
+  le plus proche, et appartenance à un zonage de raccordement biométhane
+  (libellé, maturité, capacité maximale, capacité en attente).
+- **Donnée** : « Cartographie du réseau GRDF en service » (opendata.grdf.fr,
+  3,7 M de tronçons, 24/03/2025) via l'API d'agrégation ; registre ODRÉ des
+  points d'injection ; ODRÉ « cartographie d'accès aux réseaux méthane
+  renouvelable » (zonages du droit à l'injection, 15/12/2020). Script
+  `tools/enrich_grid.py`, cache `tools/cache/grid_cache.json`.
+- **Justification** : « le nerf de la guerre est la rentabilité en fonction du
+  coût de raccordement » (AdlF 18/09) ; 4 km recommandés par GRDF pour une
+  conversion, 4 à 5 km selon BC. La distance au réseau est le premier filtre
+  physique après la puissance. Un point d'injection proche signale un réseau
+  déjà ouvert au biométhane ; un zonage validé signale une capacité
+  d'accueil étudiée par les opérateurs.
+- **Source** : BC 14/09/2026 ; AdlF 18/09/2026 ; GRDF, guide de conversion
+  (novembre 2025) ; délibération CRE n° 2019-242 (droit à l'injection).
+- **Effet** (électricité biogaz, 1222 sites) : ≤ 2 km : 490 ; ≤ 5 km :
+  771 ; ≤ 10 km : 1074 ; > 15 km ou zone ELD : 54. Périmètre v2 :
+  352 sites à ≤ 5 km.
+- **Limites** : distance depuis le centroïde de commune (± quelques km), pas
+  depuis le site ; réseau GRDF seulement (les zones ELD ressortent
+  « inconnues ») ; pas de pression ni de capacité du tronçon ; zonages de
+  2020. C'est un critère de tri ; le coût réel vient de l'étude détaillée
+  GRDF, site par site, sur la shortlist.
+
+### 4.9 Ce qui n'est volontairement pas filtré
 
 | Critère | Pourquoi pas de filtre dur | Traitement prévu |
 |---|---|---|
-| Distance au réseau gaz (4 à 5 km) | Pas de tracé en open data ; cogés au centroïde de commune | Proxy à l'étape 6 (commune desservie, distance au point d'injection le plus proche), colonne et non exclusion |
 | Structure du capital, caractère agricole | Nécessite Pappers (payant) | Étape 9, shortlist seulement |
 | Intrants et C-score | Pas de donnée publique au niveau du site | Registre équipe, étape 8 |
 | Régime ICPE, zonage PLU | Rapprochements incertains | Étape 10, site par site |
@@ -241,6 +271,7 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
 | 24/09/2026 | Vue satellite, rayon, contrôle géométrique (règle des 2 km), millésimes en données | Port de biomethane-germany | #12 |
 | 24/09/2026 | Tranches d'échéance BC ; coefficient CPB estimé et fenêtre 0,95 à conversion 2028 | Arrêté 26/12/2025, BC 14/09 | #13 |
 | 24/09/2026 | Registres ODRÉ de septembre 2026 ; périmètre électricité biogaz lu sur le code combustible B.MET et non sur la technologie ; outre-mer écarté | Profil du registre national | #14 |
+| 24/09/2026 | Distance au réseau GRDF (open data GRDF, exact au tronçon, mesuré au centroïde de commune), injection la plus proche, zonages de raccordement | BC 14/09, AdlF 18/09, GRDF | #15 |
 
 ## 7. Questions ouvertes
 

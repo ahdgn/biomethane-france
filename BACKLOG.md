@@ -133,18 +133,34 @@ géométrique 1 222/1 225 (3 sans coordonnées, 0 hors région), 540 des 554 sit
 Bioénergies de l'extrait de juin retrouvés (14 absents : agrégats, thermiques,
 outre-mer, sites sortis du registre).
 
-## Étape 6 — feat : desserte gaz et distance au réseau (proxy)
+## Étape 6 — feat : distance au réseau GRDF, injection la plus proche, zonages (PR #15)
 
-- [ ] Jointure « commune desservie en gaz » (open data GRDF / ELD) par code
-      INSEE : oui / non / inconnu
-- [ ] Distance à vis d'oiseau au point d'injection ODRÉ le plus proche et au
-      PITD/PITP : ≤ 5 km, 5-10 km, > 10 km
-- [ ] Filtres et colonnes correspondants
+Mieux que prévu : les tracés du réseau de distribution GRDF **sont** en open
+data (« Cartographie du réseau GRDF en service », 3,7 M de tronçons, licence
+ouverte). Le proxy « commune desservie » n'a plus lieu d'être.
 
-Assurance : moyenne. C'est un proxy : une commune desservie n'implique pas une
-canalisation à moins de 5 km du site, et les cogés sont géocodées au centroïde
-de commune. Les tracés GRDF ne sont pas en open data ; ratios de coût au km
-attendus d'AdlF. À remplacer par les études GRDF site par site sur la shortlist.
+- [x] `tools/enrich_grid.py` : pour chaque installation électrique biogaz,
+      distance minimale à vol d'oiseau au tronçon GRDF en service le plus
+      proche (API opendata.grdf.fr, réseaux propane exclus, rayon 15 km, cache
+      `tools/cache/grid_cache.json`) ; distance au point d'injection ODRÉ le
+      plus proche (haversine) ; zonage de raccordement biométhane (ODRÉ,
+      cartographie d'accès aux réseaux, 1 289 zonages, décembre 2020) en point
+      dans polygone, pour les deux bases
+- [x] Filtre « Réseau GRDF (distance) » : ≤ 2 / ≤ 5 / ≤ 10 km / > 10 km ou
+      inconnue, paliers dans `screening_params.json` ; popup, colonne
+      « Réseau (km) » triable, 7 colonnes CSV
+- Chiffres (électricité biogaz, 1222 sites géocodés) : distance GRDF connue
+  1168 ; ≤ 2 km : 490 ; ≤ 5 km : 771 ; ≤ 10 km : 1074 ; > 15 km ou
+  zone ELD : 54. Périmètre prospection v2 (620) : 352 sites à ≤ 5 km,
+  26 au-delà de 15 km ; zone test à ≤ 5 km : 174. Zonage de
+  raccordement renseigné : 1059 installations électriques (1059 dans
+  un zonage validé), 835 points d'injection.
+
+Assurance : moyenne-haute. La distance est exacte au tronçon près, mais
+mesurée depuis le centroïde de la commune (± quelques km) ; les zones ELD
+(Strasbourg, Bordeaux, Grenoble…) apparaissent « inconnues ». Tri, pas
+chiffrage : l'étude détaillée GRDF reste indispensable sur la shortlist. Le
+jeu zonages date de 2020 (à surveiller pour une réédition).
 
 ## Étape 7 — feat : score v2 /100 et export Excel shortlist
 

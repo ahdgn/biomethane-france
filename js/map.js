@@ -168,6 +168,17 @@ const MapView = (() => {
     if (d.echeanceAnnee != null)
       rows.push(['Échéance contrat (est.)',
         d.echeanceTrancheLabel ? `${d.echeanceAnnee} · tranche ${d.echeanceTrancheLabel}` : String(d.echeanceAnnee)]);
+    if (d.base === 'cogen') {
+      rows.push(['Réseau GRDF (est.)', d.distGrdf != null
+        ? `${fmtNum(d.distGrdf, 1)} km à vol d'oiseau`
+        : `> ${CONFIG.PARAMS.reseau.rayon_recherche_km} km ou zone ELD`]);
+      if (d.distInjection != null)
+        rows.push(['Injection la plus proche', `${fmtNum(d.distInjection, 1)} km · ${d.injectionProche || ''}`]);
+    }
+    if (d.zonage)
+      rows.push(['Zonage de raccordement', [d.zonage.libelle, d.zonage.maturite,
+        d.zonage.capamax != null ? `capacité max ${fmtNum(d.zonage.capamax, 0)} Nm³/h` : null,
+        d.zonage.capaattent ? `en attente ${d.zonage.capaattent}` : null].filter(Boolean).join(' · ')]);
     if (d.cpb) {
       const c = d.cpb;
       const coefTxt = fmtNum(c.coef, 2);

@@ -75,6 +75,7 @@ const CONFIG = (() => {
         lat: d.coordonnees ? d.coordonnees.lat : null,
         lon: d.coordonnees ? d.coordonnees.lon : null,
         geoPrecision: 'site',
+        zonage: d.zonage && d.zonage.libelle ? d.zonage : null, // zonages « NC » (non communiqués) ignorés
       }),
     },
     {
@@ -112,6 +113,11 @@ const CONFIG = (() => {
         combustible: d.combustible || '',
         codeCombustible: d.code_combustible || '',
         technologie: d.technologie || '',
+        // enrichissement réseau (tools/enrich_grid.py) : proxies, cf. METHODOLOGIE 4.8
+        distGrdf: d.dist_grdf_km != null ? d.dist_grdf_km : null,      // km, réseau GRDF en service
+        distInjection: d.dist_injection_km != null ? d.dist_injection_km : null,
+        injectionProche: d.injection_proche || '',
+        zonage: d.zonage && d.zonage.libelle ? d.zonage : null, // zonages « NC » (non communiqués) ignorés
       }),
     },
   ];
@@ -191,6 +197,8 @@ const CONFIG = (() => {
     geographie: { zone_test: ['Hauts-de-France', 'Grand Est', 'Normandie'] },
     cpb: { coefficient_majore: 0.95, coefficient_base: 0.8, age_min_ans: 15, age_max_ans: 30,
            date_butoir_injection: '2029-12-31', annee_conversion_defaut: 2028 },
+    reseau: { distance_km: { cible: 4, max: 5, seuil_exclusion: 10 }, distance_paliers_km: [2, 5, 10],
+              rayon_recherche_km: 15 },
   };
   function setParams(p) {
     if (!p) return;
@@ -202,6 +210,7 @@ const CONFIG = (() => {
     }
     if (p.geographie && p.geographie.zone_test) PARAMS.geographie.zone_test = p.geographie.zone_test;
     if (p.cpb) Object.assign(PARAMS.cpb, p.cpb);
+    if (p.reseau) Object.assign(PARAMS.reseau, p.reseau);
   }
 
   /* ---- Tranche d'échéance de contrat ----

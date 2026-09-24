@@ -41,6 +41,8 @@
   "reseau": {
     "_comment": "Distance au réseau : 4 km (GRDF, conversion), 4-5 km (BC, AdlF). Proxy v2 = commune desservie + distance au point d'injection ODRÉ le plus proche.",
     "distance_km": { "cible": 4, "max": 5, "seuil_exclusion": 10 },
+    "distance_paliers_km": [2, 5, 10],
+    "rayon_recherche_km": 15,
     "refaction_pct": 60,
     "refaction_plafond_eur": 600000
   },
