@@ -5,7 +5,7 @@ choix de design : ce que l'outil filtre, pourquoi, sur quelle donnée et sur
 quelle source. Il est tenu à jour à chaque PR qui modifie une règle. Le plan de
 versions est dans `BACKLOG.md`, les seuils dans `tools/screening_params.json`.
 
-Dernière mise à jour : 24 septembre 2026 (PR #16, score v2 et shortlist).
+Dernière mise à jour : 24 septembre 2026 (PR #17, registre équipe Airtable).
 
 ---
 
@@ -31,6 +31,8 @@ filtré, puis une shortlist, que l'équipe enrichit de sa connaissance propre
 |---|---|---|---|---|
 | Points d'injection (855) | ODRÉ, `points-dinjection-de-biomethane-en-france` (NaTran / GRDF) | 04/09/2026 | Coordonnées du site | type de site, capacité GWh PCS/an, année de MES, réseau, PITD, site ouvert, procédé |
 | Électricité biogaz (1 225) | ODRÉ, registre national des installations de production d'électricité (RTE, Enedis, ELD), filière Bioénergies, édition mensuelle | au 31/07/2026 | Centroïde de la commune (code INSEE) | code combustible, technologie, puissance kWé, régime, dates de MES et de raccordement, énergie annuelle glissante injectée, code EIC |
+
+| Registre équipe | Airtable « Biomethane France Screening tool » (`app2bwaGaaTnIBUVq`), édité par l'équipe via le panneau Qualifier | continu | clé = code EIC ou id ODRÉ | projet, statut relation, tags, difficulté raccordement appréciée, part agricole du capital, régime ICPE, intrants, confiance, notes classées ; `data/pipeline.json` via `tools/sync_register.py` |
 
 Rafraîchissement : `tools/build_datasets.py` (ODRÉ, gratuit, sans clé) puis
 `tools/check_geo.py --apply`. Les identifiants ODRÉ des points d'injection
@@ -260,12 +262,32 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
   unités territoriales ou de déchets ménagers scorent haut sur la taille
   sans que le type d'intrants soit connu ; un score trie, il ne décide pas.
 
-### 4.10 Ce qui n'est volontairement pas filtré
+### 4.10 Registre équipe : connaissance propriétaire
+
+- **Règle** : la connaissance de l'équipe (relation avec l'exploitant,
+  difficulté de raccordement constatée, capital, ICPE, intrants, notes) est
+  saisie dans Airtable depuis le panneau « Qualifier » de chaque fiche, puis
+  synchronisée dans l'app. Un site est « au pipeline » quand son champ Projet
+  est renseigné (halo ambre, filtre dédié) ; une fiche sans projet enrichit le
+  site sans le mettre au pipe. Les sites écartés restent au registre.
+- **Donnée** : `data/pipeline.json` (sortie de `tools/sync_register.py`),
+  schéma dans `REGISTER.md`.
+- **Justification** : « sourcer les bons le plus en amont pour prendre le
+  premier contact avant les autres » (BC 14/09) ; « un outil qui devient de
+  plus en plus propriétaire » (Daniel 09/09) ; capital agricole et ICPE sont
+  les deux critères réglementaires que les registres publics ne donnent pas.
+- **Source** : port de `biomethane-germany` (registre validé le 18/09/2026),
+  demande de notes classées par catégorie (Daniel, 21/09/2026).
+- **Limites** : le registre est vide au départ ; le formulaire partagé doit
+  être créé dans Airtable par Ahmed et son lien collé dans la config ; la
+  synchronisation est manuelle (script ou connecteur), commitée par PR.
+
+### 4.11 Ce qui n'est volontairement pas filtré
 
 | Critère | Pourquoi pas de filtre dur | Traitement prévu |
 |---|---|---|
-| Structure du capital, caractère agricole | Nécessite Pappers (payant) | Étape 9, shortlist seulement |
-| Intrants et C-score | Pas de donnée publique au niveau du site | Registre équipe, étape 8 |
+| Structure du capital, caractère agricole | Nécessite Pappers (payant) | Registre équipe (étape 8) puis Pappers, étape 9, shortlist seulement |
+| Intrants et C-score | Pas de donnée publique au niveau du site | Registre équipe (étape 8) |
 | Régime ICPE, zonage PLU | Rapprochements incertains | Étape 10, site par site |
 
 ## 5. Principes de design
@@ -305,6 +327,7 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
 | 24/09/2026 | Registres ODRÉ de septembre 2026 ; périmètre électricité biogaz lu sur le code combustible B.MET et non sur la technologie ; outre-mer écarté | Profil du registre national | #14 |
 | 24/09/2026 | Distance au réseau GRDF (open data GRDF, exact au tronçon, mesuré au centroïde de commune), injection la plus proche, zonages de raccordement | BC 14/09, AdlF 18/09, GRDF | #15 |
 | 24/09/2026 | Score v2 : pondération proposée (élec. 25/25/15/20/15, injection 30/35/20/15), priorités calibrées par base, région neutre ; classeur shortlist | Proposition AG / Claude, à valider AdlF | #16 |
+| 24/09/2026 | Registre équipe Airtable (base France créée), panneau Qualifier, pipeline = projet renseigné, notes classées | Port de biomethane-germany, Daniel 09/09 et 21/09 | #17 |
 
 ## 7. Questions ouvertes
 

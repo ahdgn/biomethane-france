@@ -53,9 +53,30 @@
     const allData = loaded.flatMap(r => r.records);
     const loadedBases = loaded.map(r => r.ds.id);
 
+    /* ---- Registre équipe (facultatif) : data/pipeline.json ---- */
+    try {
+      const plResp = await fetch('data/pipeline.json');
+      if (plResp.ok) {
+        const plEntries = await plResp.json();
+        const bySite = Object.fromEntries(plEntries.map(e => [String(e.site), e]));
+        allData.forEach(r => {
+          const raw = r.id.replace(/^(cog|inj)-/, '');
+          if (bySite[raw]) r.pipeline = bySite[raw];
+          // Dans le pipeline Nautilus = rattaché à un projet nommé ; une fiche
+          // sans projet enrichit le site sans le mettre au pipe.
+          r.inPipeline = !!(r.pipeline && r.pipeline.project);
+        });
+      }
+    } catch (e) { /* registre absent : couche pipeline simplement inactive */ }
+    allData.forEach(r => {
+      r.evalStatus = (r.pipeline && r.pipeline.eval) || 'unknown';
+      r.gridRating = (r.pipeline && r.pipeline.grid) || '';
+    });
+
     /* ---- Init des modules ---- */
     MapView.init();
     Charts.init();
+    Qualify.init();
     DataTable.init(loadedBases.includes('cogen'));
     Filters.init(allData, loadedBases);
 

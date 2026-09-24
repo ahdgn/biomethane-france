@@ -193,7 +193,8 @@ const DataTable = (() => {
   function exportCSV() {
     if (currentData.length === 0) return;
 
-    const headers = ['Base', 'Score v2', 'Priorité v2', 'Détail score', 'Projet', 'Commune', 'Département', 'Région', 'Type',
+    const headers = ['Base', 'Clé registre', 'Pipeline Nautilus (projet)', 'Statut relation', 'Tags équipe',
+      'Score v2', 'Priorité v2', 'Détail score', 'Projet', 'Commune', 'Département', 'Région', 'Type',
       'Capacité (GWh/an)', 'Unité capacité', 'Puissance (kWé)', 'Code combustible', 'Technologie', 'Mise en service',
       'Échéance contrat estimée', 'Tranche échéance', 'Hypothèse durée contrat',
       'Âge à la conversion (année par défaut)', 'Coefficient CPB estimé', 'Fenêtre 0,95 (première année)', 'Fenêtre 0,95 (dernière année)',
@@ -204,6 +205,10 @@ const DataTable = (() => {
 
     const rows = currentData.map(d => [
       d.base === 'cogen' ? 'Élec. biogaz' : 'Injection',
+      d.id.replace(/^(cog|inj)-/, ''),
+      d.pipeline && d.pipeline.project ? d.pipeline.project : '',
+      d.evalStatus && d.evalStatus !== 'unknown' ? (CONFIG.EVAL_LABELS[d.evalStatus] || d.evalStatus) : '',
+      d.pipeline && d.pipeline.tags ? d.pipeline.tags.map(t => CONFIG.TAG_LABELS[t] || t).join(' · ') : '',
       d.score != null ? String(d.score).replace('.', ',') : '',
       d.priorite || '',
       d.scoreDetail ? Object.entries(d.scoreDetail).map(([k, v]) => `${CONFIG.SCORE_LABELS[k] || k} ${v}`).join(' · ') : '',

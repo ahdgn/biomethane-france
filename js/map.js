@@ -87,7 +87,7 @@ const MapView = (() => {
 
     addLegend();
 
-    // Lien « 50 km autour » des popups -> filtre rayon
+    // Liens des popups : « 50 km autour » -> filtre rayon ; « Qualifier » -> panneau registre
     map.on('popupopen', (e) => {
       const el = e.popup.getElement();
       const a = el.querySelector('a[data-radius-id]');
@@ -95,6 +95,13 @@ const MapView = (() => {
         ev.preventDefault();
         const d = dataById.get(a.dataset.radiusId);
         if (d) Filters.setRadius(d.lat, d.lon, 50, d.nom);
+        map.closePopup();
+      });
+      const q = el.querySelector('a[data-qualify-id]');
+      if (q) q.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const d = dataById.get(q.dataset.qualifyId);
+        if (d) Qualify.open(d);
         map.closePopup();
       });
     });
@@ -142,10 +149,14 @@ const MapView = (() => {
     const shape = isCogen
       ? `border-radius: 3px; transform: rotate(45deg);`
       : `border-radius: 50%;`;
+    // sites du pipeline Nautilus (registre, projet renseigné) : halo ambre
+    const ring = d.inPipeline
+      ? `border:2.5px solid ${PALETTE.amber};box-shadow:0 0 0 2px rgba(251,174,64,0.35);`
+      : `border:1.5px solid #fff;box-shadow:0 1px 3px rgba(30,66,96,0.4);`;
     return L.divIcon({
       className: 'site-marker',
       html: `<div style="width:${size}px;height:${size}px;background:${color};${shape}
-        border:1.5px solid #fff;box-shadow:0 1px 3px rgba(30,66,96,0.4);
+        ${ring}
         ${d.ouvert ? '' : 'opacity:0.45;'}"></div>`,
       iconSize: [size, size],
       iconAnchor: [r, r],
@@ -185,6 +196,17 @@ const MapView = (() => {
       rows.push(['Zonage de raccordement', [d.zonage.libelle, d.zonage.maturite,
         d.zonage.capamax != null ? `capacité max ${fmtNum(d.zonage.capamax, 0)} Nm³/h` : null,
         d.zonage.capaattent ? `en attente ${d.zonage.capaattent}` : null].filter(Boolean).join(' · ')]);
+    if (d.inPipeline)
+      rows.push(['Pipeline Nautilus', [d.pipeline.project, d.pipeline.status, d.pipeline.confidence].filter(Boolean).join(' · ')]);
+    if (d.evalStatus && d.evalStatus !== 'unknown')
+      rows.push(['Relation', CONFIG.EVAL_LABELS[d.evalStatus] || d.evalStatus]);
+    if (d.gridRating)
+      rows.push(['Difficulté raccordement (équipe)', CONFIG.GRID_LABELS[d.gridRating] || d.gridRating]);
+    if (d.pipeline && d.pipeline.tags && d.pipeline.tags.length)
+      rows.push(['Connaissance équipe', d.pipeline.tags.map(t => CONFIG.TAG_LABELS[t] || t).join(' · ')]);
+    if (d.pipeline && d.pipeline.capital) rows.push(['Capital', d.pipeline.capital]);
+    if (d.pipeline && d.pipeline.icpe) rows.push(['Régime ICPE', d.pipeline.icpe]);
+    if (d.pipeline && d.pipeline.intrants) rows.push(['Intrants', d.pipeline.intrants]);
     if (d.cpb) {
       const c = d.cpb;
       const coefTxt = fmtNum(c.coef, 2);
@@ -203,6 +225,11 @@ const MapView = (() => {
     const radiusLink = (d.lat != null && d.lon != null)
       ? `<a class="popup-link" href="#" data-radius-id="${escapeHtml(d.id)}"
            title="Ne garder que les sites autour de celui-ci">⌖ 50 km autour</a>` : '';
+    const qualifyLink = `<a class="popup-link" href="#" data-qualify-id="${escapeHtml(d.id)}"
+           title="Ouvrir le panneau de qualification et inscrire ce site au registre équipe">✎ Qualifier</a>`;
+    const plNote = d.pipeline && d.pipeline.notes
+      ? Object.entries(d.pipeline.notes).map(([k, v]) => `<div class="legend-note"><b>${escapeHtml(k)}</b> : ${escapeHtml(v)}</div>`).join('')
+      : '';
 
     return `
       <div class="popup-title">${escapeHtml(d.nom)}</div>
@@ -212,10 +239,11 @@ const MapView = (() => {
       </dl>
       <div class="popup-foot">
         <span class="status-tag ${d.ouvert ? 'open' : 'closed'}">${d.ouvert ? 'Ouvert' : 'Fermé'}</span>
+        ${qualifyLink}
         ${radiusLink}
         ${gmaps}
       </div>
-      ${hypNote}${geoNote}`;
+      ${hypNote}${geoNote}${plNote}`;
   }
 
   function update(data) {
