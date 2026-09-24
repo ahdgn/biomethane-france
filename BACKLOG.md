@@ -31,19 +31,27 @@ Les exports Excel destinés à AdlF sont copiés dans
 
 Assurance : très élevée. Aucun changement de comportement.
 
-## Étape 2 — fix : périmètre cogé et filtre prospection v2
+## Étape 2 — fix : périmètre cogé et filtre prospection v2 (PR #10)
 
-- [ ] Cogé : filière Bioénergies, en service, combustible non renseigné
-      (méthanisation), puissance ≥ 250 kW (plancher BC), bandes 250-500,
-      500-1 000, ≥ 1 000 kW
-- [ ] Injection : suppression du plafond 25 GWh ; types agricoles et
-      industriel territorial, site ouvert
-- [ ] Interrupteur « zone test » (Hauts-de-France, Grand Est, Normandie),
-      sans pondération régionale dans le score
-- [ ] Bouton ⓘ mis à jour (périmètre thèse du 18/09/2026)
+- [x] Cogé : filière Bioénergies, en service, combustible non renseigné
+      (méthanisation), puissance ≥ 250 kW (plancher BC) ; filtre segmenté
+      ≥ 250 / ≥ 500 / ≥ 1 000 kWé
+- [x] Injection : suppression du plafond 25 GWh ; types agricoles et
+      industriel territorial, site ouvert, ≥ 5 GWh/an
+- [x] Interrupteur « zone test » (Hauts-de-France, Grand Est, Normandie),
+      sans pondération régionale
+- [x] Bouton ⓘ mis à jour ; l'app lit `tools/screening_params.json`
+      (valeurs de secours dans `config.js`)
+- Chiffres (registres au 01/01/2025 et mi-2026) : prospection v1 = 569
+  injection + 325 cogé ; v2 = 713 injection (+144 sites > 25 GWh) + 323 cogé
+  (≥ 250 kWé ; 80 à ≥ 500, 31 à ≥ 1 000). Zone test : 287 injection, 169 cogé
+  (Grand Est 113, Normandie 37, Hauts-de-France 19).
+- À vérifier avec AdlF : 31 cogés ≥ 1 MWé au registre contre « une poignée »
+  selon BC ; 2 cogés sans puissance renseignée.
 
 Assurance : élevée. Données déjà présentes (`puissance_kw`, `filiere`,
-`combustible`). Vérification : comptages avant/après, contrôle sur 10 sites.
+`combustible`). Vérification : comptages avant/après (ci-dessus), app
+ouverte en local, liens partagés v1 (`p=1`) toujours acceptés.
 
 ## Étape 3 — feat : apports faciles de l'outil allemand (front-end)
 

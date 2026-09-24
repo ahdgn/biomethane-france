@@ -10,7 +10,7 @@
   <!-- Librairies vendorisées (pas de CDN, pas de fonte externe) -->
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
-  <link rel="stylesheet" href="css/style.css?v=20260728-1">
+  <link rel="stylesheet" href="css/style.css?v=20260924-1">
 </head>
 <body>
 
@@ -43,25 +43,44 @@
         </button>
       </div>
 
-      <!-- Filtre prospection 1 (périmètre thèse) -->
+      <!-- Filtre prospection v2 (périmètre thèse, 18/09/2026) -->
       <div class="filter-group prospection-group">
         <div class="prospection-row">
           <label class="switch">
             <input type="checkbox" id="filter-prospection">
             <span class="switch-track" aria-hidden="true"></span>
-            <span class="switch-text">Filtre prospection 1</span>
+            <span class="switch-text">Filtre prospection v2</span>
           </label>
           <button class="info-btn" id="prospection-info-btn" aria-expanded="false"
-                  aria-controls="prospection-info" aria-label="Périmètre du filtre prospection 1">i</button>
+                  aria-controls="prospection-info" aria-label="Périmètre du filtre prospection v2">i</button>
         </div>
         <div class="info-pop" id="prospection-info" hidden>
-          <strong>Périmètre appliqué</strong> (weekly 12/06/2026 · stratégie v2)
+          <strong>Périmètre appliqué</strong> (reprise 18/09/2026 · BC 14/09/2026 · seuils dans tools/screening_params.json)
           <ul>
-            <li><b>Injection</b> : agricole autonome / agricole territorial / industriel territorial · site ouvert · capacité 5–25 GWh/an</li>
-            <li><b>Cogénérations</b> : filière bioénergies · en service · ≥ 1 GWh él/an · hors combustibles spécifiques (bois, déchets ménagers ou industriels, papeterie, biogaz de STEP)</li>
+            <li><b>Injection</b> : agricole autonome / agricole territorial / industriel territorial · site ouvert · capacité ≥ 5 GWh/an. Plus de plafond 25 GWh : le guichet ouvert est réservé aux &lt; 13 GWh depuis l'arrêté du 10/08/2026 et abrogé au 31/12/2026.</li>
+            <li><b>Cogénérations</b> : filière bioénergies · en service · méthanisation (hors bois, déchets ménagers ou industriels, papeterie, biogaz de STEP) · puissance ≥ 250 kWé (plancher BC / GRDF ; cible 500 kWé, priorité 1 MWé via le filtre Puissance)</li>
           </ul>
-          Se combine avec les autres filtres (ex. échéance 2026-29).
+          Se combine avec les autres filtres (échéance, puissance, zone test).
         </div>
+        <div class="prospection-row">
+          <label class="switch">
+            <input type="checkbox" id="filter-zone">
+            <span class="switch-track" aria-hidden="true"></span>
+            <span class="switch-text">Zone test : Hauts-de-France, Grand Est, Normandie</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Puissance cogé minimale (kWé) -->
+      <div class="filter-group">
+        <span class="filter-label" id="label-power">Puissance cogé (kWé)</span>
+        <div class="segmented" id="filter-power" role="group" aria-labelledby="label-power">
+          <button class="seg-btn" data-power="" aria-pressed="true">Toutes</button>
+          <button class="seg-btn" data-power="250" aria-pressed="false">≥ 250</button>
+          <button class="seg-btn" data-power="500" aria-pressed="false">≥ 500</button>
+          <button class="seg-btn" data-power="1000" aria-pressed="false">≥ 1 000</button>
+        </div>
+        <span class="filter-hint">Plancher 250 · cible 500 · priorité 1 000 kWé (BC 14/09/2026). Sans effet sur les points d'injection.</span>
       </div>
 
       <!-- Base (visible quand plusieurs jeux de données sont chargés) -->
@@ -264,11 +283,11 @@
   <script src="vendor/chartjs/chart.umd.min.js"></script>
 
   <!-- App -->
-  <script src="js/config.js?v=20260728-1"></script>
-  <script src="js/filters.js?v=20260728-1"></script>
-  <script src="js/map.js?v=20260728-1"></script>
-  <script src="js/charts.js?v=20260728-1"></script>
-  <script src="js/table.js?v=20260728-1"></script>
-  <script src="js/app.js?v=20260728-1"></script>
+  <script src="js/config.js?v=20260924-1"></script>
+  <script src="js/filters.js?v=20260924-1"></script>
+  <script src="js/map.js?v=20260924-1"></script>
+  <script src="js/charts.js?v=20260924-1"></script>
+  <script src="js/table.js?v=20260924-1"></script>
+  <script src="js/app.js?v=20260924-1"></script>
 </body>
 </html>
