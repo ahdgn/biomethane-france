@@ -116,6 +116,9 @@ const CONFIG = (() => {
         combustible: d.combustible || '',
         codeCombustible: d.code_combustible || '',
         technologie: d.technologie || '',
+        icpe: d.icpe || null,               // étape 10 : rapprochement Géorisques (rubrique 2781)
+        latCommune: d.lat_commune != null ? d.lat_commune : null,
+        lonCommune: d.lon_commune != null ? d.lon_commune : null,
         // enrichissement réseau (tools/enrich_grid.py) : proxies, cf. METHODOLOGIE 4.8
         distGrdf: d.dist_grdf_km != null ? d.dist_grdf_km : null,      // km, réseau GRDF en service
         distInjection: d.dist_injection_km != null ? d.dist_injection_km : null,

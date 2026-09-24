@@ -32,12 +32,14 @@ puis ouvrir <http://localhost:8000>.
 | `tools/enrich_grid.py` | Enrichissement réseau : distance au tronçon GRDF en service le plus proche (open data GRDF), point d'injection le plus proche, zonage de raccordement (ODRÉ) ; cache dans `tools/cache/` |
 | `tools/qualify_v2.py` | Score v2 sur 100 et priorités (pondération dans `screening_params.json`), écrits dans les données ; classeur Excel de shortlist pour l'équipe (OneDrive, `Biomethane France/Screening/`) |
 | `tools/sync_register.py` | Registre équipe Airtable → `data/pipeline.json` (`REGISTER.md`) |
+| `tools/geocode_icpe.py` | Position réelle et régime ICPE (Géorisques, rubrique 2781) ; `--restore` remet le centroïde de commune |
 | `tools/check_geo.py` | Contrôle géométrique : chaque site testé contre les contours des régions (`tools/geo/regions.geo.json`) ; `--apply` corrige la région ou retire des coordonnées hors de France |
 
 ## Mettre à jour les données
 
 ```bash
 python tools/build_datasets.py
+python tools/geocode_icpe.py       # position ICPE (icpe_2781.json : couche WFS Géorisques filtrée sur 2781)
 python tools/check_geo.py --apply
 python tools/enrich_grid.py        # ~6 min la première fois (1 225 requêtes GRDF), cache ensuite
 python tools/qualify_v2.py         # score v2 + classeur Excel
@@ -67,10 +69,10 @@ pas un critère : l'ancien radar (juin 2026) filtré sur « Cogénération »
 ## Limites connues des données
 
 - **Position des installations électriques** : le registre national ne fournit
-  aucune coordonnée ; les sites sont géocodés au **centroïde de leur commune**
-  (code INSEE, geo.api.gouv.fr ; écart possible de plusieurs km). Signalé dans
-  les fiches et le CSV (`Précision géo`). Trois communes déléguées ou périmées
-  ne sont pas géocodées.
+  aucune coordonnée. Les méthaniseurs sont positionnés sur leur **installation
+  classée** (Géorisques, rubrique 2781, rapprochement par commune puis nom :
+  390 sites) ; les autres restent au **centroïde de leur commune**. La
+  précision est indiquée dans les fiches et le CSV (`Précision géo`).
 - **Échéances de contrat** : estimations (`année MES + durée réglementaire`) —
   injection 15 ans ; électricité biogaz 20 ans (BG16 ; BG11/BG06 prolongés,
   arrêté du 24/02/2017). Avenants et renégociations non captés ; 13

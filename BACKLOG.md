@@ -229,13 +229,41 @@ l'alimente pas.
 Assurance : moyenne. Fiabilité du rapprochement nom de site → SIREN notée
 HAUTE / MOYENNE / FAIBLE, à revoir manuellement sur la shortlist.
 
-## Étape 10 — feat : régime ICPE et zonage PLU
+## Étape 10 — feat : géocodage ICPE, régime, recalcul des distances (PR #22)
 
-- [ ] Base Géorisques ICPE (rubrique 2781) : régime autorisation /
-      enregistrement / déclaration, jointure par commune et nom
-- [ ] Zonage PLU du site via `cadastre-nautilus` (zone A, N, U, AU)
+Étape élargie (décision AG 24/09) : la base ICPE sert d'abord à **positionner
+les installations** (le centroïde de commune faussait liens, marqueurs et
+distances), puis à lire le régime.
 
-Assurance : moyenne-faible. Rapprochements incertains, à valider site par site.
+- [x] Source : Géorisques, base des installations classées, couche WFS BRGM
+      `ms:InstallationsClassees` (mapsref.brgm.fr, licence ouverte, édition
+      2026 ; l'API REST Géorisques était indisponible le 24/09). Filtre
+      rubrique 2781 (méthanisation) : 904 installations dans
+      840 communes (`tools/cache/icpe_2781.json`).
+- [x] `tools/geocode_icpe.py` : rapprochement par code INSEE puis similarité de
+      nom ; position Lambert 93 convertie en WGS84 ; `lat_commune` /
+      `lon_commune` conservés, `geo_precision` = « site (ICPE) », champ `icpe`
+      (nom, régime, adresse, SIRET, code AIOT, fiche, confiance).
+      **`--restore` remet le centroïde** ; tag git `v2-etapes-1-8` = point de
+      retour.
+- [x] Résultat sur 966 méthaniseurs (B.MET) : 390 positionnés
+      (340 candidat unique dans la commune, 25 par nom, 25
+      ambigus), 576 sans ICPE 2781 dans leur commune (centroïde conservé).
+      Régimes : Enregistrement 284, Autorisation 106.
+- [x] Distances GRDF recalculées depuis la vraie position (390 sites) :
+      périmètre v2 à ≤ 5 km 348 (avant 352) ; score v2
+      recalculé, priorités A : 78 (avant 78) ; nouveau classeur daté.
+- [x] Popup (position ICPE, régime, fiche Géorisques), 4 colonnes CSV,
+      classeur (régime, nom ICPE, confiance, précision géo).
+- [ ] Zonage PLU du site via `cadastre-nautilus` : reporté (position réelle
+      désormais disponible pour le faire site par site sur la shortlist).
+- [ ] Complément OpenStreetMap pour les sites sans ICPE : à évaluer (Overpass
+      indisponible le 24/09).
+
+Assurance : moyenne-haute sur la position (candidat unique dans la commune =
+cas majoritaire), moyenne sur les cas ambigus (confiance affichée), le régime
+suit le rapprochement. À contrôler sur la shortlist avec les liens Google Maps
+et la fiche Géorisques.
 
 ## Coûts et appels d'API
 

@@ -192,6 +192,9 @@ const MapView = (() => {
       if (d.distInjection != null)
         rows.push(['Injection la plus proche', `${fmtNum(d.distInjection, 1)} km · ${d.injectionProche || ''}`]);
     }
+    if (d.icpe)
+      rows.push(['ICPE (Géorisques)', [d.icpe.lib_regime ? `régime ${d.icpe.lib_regime.toLowerCase()}` : null,
+        d.icpe.nom, d.icpe.maj ? `màj ${d.icpe.maj}` : null].filter(Boolean).join(' · ')]);
     if (d.zonage)
       rows.push(['Zonage de raccordement', [d.zonage.libelle, d.zonage.maturite,
         d.zonage.capamax != null ? `capacité max ${fmtNum(d.zonage.capamax, 0)} Nm³/h` : null,
@@ -218,7 +221,9 @@ const MapView = (() => {
     const hypNote = d.echeanceHyp
       ? `<div class="legend-note">Hypothèse : ${escapeHtml(d.echeanceHyp)}</div>` : '';
     const geoNote = d.geoPrecision === 'commune'
-      ? `<div class="legend-note">Position au centre de la commune</div>` : '';
+      ? `<div class="legend-note">Position au centre de la commune</div>`
+      : d.geoPrecision === 'site (ICPE)'
+        ? `<div class="legend-note">Position de l'installation classée (Géorisques, ${escapeHtml(d.icpe && d.icpe.confiance || 'rapprochement par commune')})</div>` : '';
     const gl = CONFIG.gmapsLinks(d);
     const gmaps = [gl.primary, gl.secondary].filter(Boolean).map(l =>
       `<a class="popup-link" href="${l.href}" title="${escapeHtml(l.title)}"
@@ -226,6 +231,9 @@ const MapView = (() => {
     const radiusLink = (d.lat != null && d.lon != null)
       ? `<a class="popup-link" href="#" data-radius-id="${escapeHtml(d.id)}"
            title="Ne garder que les sites autour de celui-ci">⌖ 50 km autour</a>` : '';
+    const icpeLink = d.icpe && d.icpe.url
+      ? `<a class="popup-link" href="${escapeHtml(d.icpe.url)}" target="_blank" rel="noopener noreferrer"
+           title="Fiche de l'installation classée sur Géorisques">Fiche ICPE ↗</a>` : '';
     const qualifyLink = `<a class="popup-link" href="#" data-qualify-id="${escapeHtml(d.id)}"
            title="Ouvrir le panneau de qualification et inscrire ce site au registre équipe">✎ Qualifier</a>`;
     const plNote = d.pipeline && d.pipeline.notes
@@ -243,6 +251,7 @@ const MapView = (() => {
         ${qualifyLink}
         ${radiusLink}
         ${gmaps}
+        ${icpeLink}
       </div>
       ${hypNote}${geoNote}${plNote}`;
   }

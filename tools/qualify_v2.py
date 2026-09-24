@@ -177,6 +177,7 @@ ELEC_HEADERS = ["Rang", "Priorité", "Score /100", "Pts puissance", "Pts échéa
                 "Nom", "Commune", "Département", "Région", "Zone test", "Puissance kWé", "Énergie injectée GWh/an", "Facteur de charge",
                 "Technologie", "Mise en service", "Échéance estimée", "Coef. CPB 2028", "Fenêtre 0,95", "Distance GRDF km",
                 "Injection la plus proche km", "Injection la plus proche", "Zonage", "Zonage maturité", "Zonage capacité max Nm3/h",
+                "Régime ICPE", "ICPE nom", "ICPE confiance", "Précision géo",
                 "Gestionnaire", "Code EIC", "Latitude", "Longitude", "Google Maps (site)", "Google Maps (coordonnées)",
                 "Contact", "Statut prospection", "Commentaires AdlF"]
 INJ_HEADERS = ["Rang", "Priorité", "Score /100", "Pts capacité", "Pts tarif résiduel", "Pts type", "Pts augmentation",
@@ -205,7 +206,9 @@ def elec_row(rank, d):
             d.get("puissance_kw"), d.get("energie_gwh_an"), d["score_meta"]["fc"], d.get("technologie"), d.get("date_mes"),
             d["score_meta"]["echeance"], d["score_meta"]["coef"], f"{f[0]}-{f[1]}" if f else "hors d'atteinte",
             d.get("dist_grdf_km"), d.get("dist_injection_km"), d.get("injection_proche"),
-            z.get("libelle"), z.get("maturite"), z.get("capamax"), d.get("gestionnaire"), d.get("code_eic"), lat, lon,
+            z.get("libelle"), z.get("maturite"), z.get("capamax"),
+            (d.get("icpe") or {}).get("lib_regime"), (d.get("icpe") or {}).get("nom"), (d.get("icpe") or {}).get("confiance"), d.get("geo_precision"),
+            d.get("gestionnaire"), d.get("code_eic"), lat, lon,
             gmaps_search(d), f"https://www.google.com/maps?q={lat},{lon}" if lat is not None else "", "", "", ""]
 
 
