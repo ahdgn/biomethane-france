@@ -1,0 +1,70 @@
+{
+  "_comment": "Seuils du screening France v2. Sources : Benoît Condoumi 14/09/2026, Antoine de la Faire 18/09/2026, annexe réglementaire 24/09/2026. Le code lit ce fichier ; aucun seuil ne vit dans le code. Statut : proposition v2, à valider avec AdlF le 25/09/2026.",
+  "version": "2.0-draft",
+  "date": "2026-09-24",
+
+  "cogen": {
+    "_comment": "Cibles de conversion cogénération -> injection.",
+    "filiere": ["Bioénergies"],
+    "combustible_exclus": ["Bois", "Déchets ménagers", "Déchets industriels", "Papeterie", "Biogaz de station d'épuration"],
+    "puissance_kw": { "plancher": 250, "cible": 500, "priorite": 1000 },
+    "duree_contrat_ans": 20,
+    "echeance_tranches": [
+      { "label": "≤ 2026", "max": 2026 },
+      { "label": "2027-2028", "min": 2027, "max": 2028 },
+      { "label": "2029-2030", "min": 2029, "max": 2030 },
+      { "label": "> 2030", "min": 2031 }
+    ]
+  },
+
+  "injection": {
+    "_comment": "Brownfield injection : site déjà raccordé, tarif en cours ou passerelle CPB avant fin 2027.",
+    "types": ["Agricole autonome", "Agricole territorial", "Industriel territorial"],
+    "site_ouvert": true,
+    "capacite_gwh_an": { "min": 5, "max": null },
+    "duree_tarif_ans": 15,
+    "passerelle_cpb_fin": "2027-12-31"
+  },
+
+  "cpb": {
+    "_comment": "Arrêté du 26/12/2025 : coefficient 0,95 pour une installation de 15 à 30 ans dont la première injection intervient avant le 31/12/2029 ; 0,8 sinon.",
+    "coefficient_majore": 0.95,
+    "coefficient_base": 0.8,
+    "age_min_ans": 15,
+    "age_max_ans": 30,
+    "date_butoir_injection": "2029-12-31",
+    "annee_conversion_defaut": 2028,
+    "penalite_eur_mwh": 100,
+    "prix_scenarios_eur_mwh": { "bas": 60, "central": 80, "haut": 95 }
+  },
+
+  "reseau": {
+    "_comment": "Distance au réseau : 4 km (GRDF, conversion), 4-5 km (BC, AdlF). Proxy v2 = commune desservie + distance au point d'injection ODRÉ le plus proche.",
+    "distance_km": { "cible": 4, "max": 5, "seuil_exclusion": 10 },
+    "refaction_pct": 60,
+    "refaction_plafond_eur": 600000
+  },
+
+  "geographie": {
+    "_comment": "Zone test AdlF 18/09 : terrains vierges, hors région d'intervention d'AdlF. Filtre, pas de pondération.",
+    "mode": "national",
+    "zone_test": ["Hauts-de-France", "Grand Est", "Normandie"],
+    "ponderation_regionale": false
+  },
+
+  "agricole": {
+    "_comment": "L. 311-1 et D. 311-18 du code rural : 50 % d'intrants agricoles et capital majoritairement agricole, sinon pas de permis en zone A.",
+    "intrants_agricoles_min_pct": 50,
+    "part_investisseur_max_pct": 49
+  },
+
+  "score_v2": {
+    "_comment": "Pondération proposée pour l'étape 6, à valider. Total 100.",
+    "puissance": 25,
+    "fenetre_echeance": 25,
+    "fenetre_coefficient_095": 15,
+    "desserte_gaz": 20,
+    "type_intrants": 15,
+    "region": 0
+  }
+}
