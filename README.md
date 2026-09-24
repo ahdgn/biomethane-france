@@ -1,10 +1,12 @@
 # Biométhane France — Portail de suivi
 
-Cartographie et analyse des **points d'injection de biométhane** (registre ODRÉ,
-818 sites) et des **cogénérations** (registre EDF OA, 1 002 installations) en France.
+Cartographie et analyse des **points d'injection de biométhane** (registre
+ODRÉ, 855 sites au 04/09/2026) et des **installations de production
+d'électricité à partir de biogaz** (registre national ODRÉ, filière Bioénergies,
+1 225 installations au 31/07/2026), cibles de conversion vers l'injection.
 
 Application statique — aucun backend, aucune dépendance externe au chargement
-(librairies et fontes vendorisées ; seul le fond de carte CARTO est appelé en ligne).
+(librairies et fontes vendorisées ; seuls les fonds de carte Esri sont appelés en ligne).
 
 ## Lancer en local
 
@@ -18,49 +20,61 @@ puis ouvrir <http://localhost:8000>.
 
 | Chemin | Rôle |
 |---|---|
-| `js/config.js` | Source unique de vérité : palette, couleur par type, jeux de données, formats fr-FR |
-| `js/filters.js` | État des filtres, KPI, synchronisation de l'URL (état partageable) |
-| `js/map.js` | Carte Leaflet : marqueurs ∝ capacité, légende dynamique cliquable |
+| `js/config.js` | Source unique de vérité : palette, couleur par type, jeux de données, formats fr-FR, règles (échéances, coefficient CPB, prospection) |
+| `js/filters.js` | État des filtres, KPI, synchronisation de l'URL (état partageable), rayon |
+| `js/map.js` | Carte Leaflet : marqueurs ∝ capacité, légende dynamique cliquable, satellite, cercle de rayon |
 | `js/charts.js` | Graphiques Chart.js (axe temps linéaire, unités homogènes) |
 | `js/table.js` | Tableau trié/paginé, export CSV (`;` + BOM, compatible Excel FR) |
-| `data/` | Jeux de données JSON |
-| `tools/build_cogen_json.py` | ETL du radar cogé : Excel → JSON, géocodage au centroïde de commune (geo.api.gouv.fr) |
+| `data/` | Jeux de données JSON et `meta.json` (millésimes, écrits par l'ETL) |
+| `tools/screening_params.json` | Seuils du screening (puissance, tranches, CPB, zone test) : la config, jamais le code |
+| `tools/build_datasets.py` | ETL : registres ODRÉ → `data/*.json` + `meta.json` (injection telle quelle ; électricité biogaz filtrée sur la filière Bioénergies, géocodée au centroïde de commune par code INSEE) |
 | `tools/check_geo.py` | Contrôle géométrique : chaque site testé contre les contours des régions (`tools/geo/regions.geo.json`) ; `--apply` corrige la région ou retire des coordonnées hors de France |
-| `data/meta.json` | Millésimes des registres, affichés dans la note de source |
 
-## Mettre à jour les cogénérations
+## Mettre à jour les données
 
 ```bash
-python tools/build_cogen_json.py "chemin/vers/ACREnergy_CogenFrance_Radar.xlsx"
+python tools/build_datasets.py
+python tools/check_geo.py --apply
 ```
 
-Les positions cogé sont au **centroïde de la commune** (le registre ne fournit pas
-de coordonnées) ; l'imprécision est signalée dans l'interface. Les colonnes de
-scoring du radar sont ignorées.
+Puis commit des fichiers `data/` sur une branche et PR (chiffres avant/après
+dans la description). Les deux jeux sont téléchargés depuis ODRÉ (licence
+ouverte, sans clé) ; le registre électricité est réédité chaque mois.
 
 ## Unités
 
 - Injection : **GWh PCS/an** (capacité de production).
-- Cogénérations : **GWh électriques/an** (énergie injectée). Jamais additionnés.
+- Électricité biogaz : **GWh électriques/an** (énergie annuelle glissante
+  injectée, registre national) ; la **puissance en kWé** est le critère de
+  screening. Jamais additionnés à l'injection.
+
+## Périmètre « électricité biogaz »
+
+Le registre national est filtré sur la filière Bioénergies. Le type de site est
+lu sur le **code combustible** : `B.MET` = biogaz de méthanisation (cibles de
+conversion), `B.EPU` / `B.STO` / `BAGAS` = STEP, ISDND, bagasse, le reste =
+bois, déchets ménagers ou industriels, papeterie. La technologie déclarée
+(« Cogénération à combustion », « Autre », « Moteur à piston », vide…) n'est
+pas un critère : l'ancien radar (juin 2026) filtré sur « Cogénération »
+écartait plus de la moitié du parc, dont l'essentiel des sites 2007-2014.
 
 ## Limites connues des données
 
-- **Position des cogénérations** : le registre EDF OA ne fournit aucune coordonnée ;
-  les sites sont géocodés au **centroïde de leur commune** (écart possible de
-  plusieurs km). Signalé dans les fiches et le CSV (`Précision géo`). Voir issue #4.
+- **Position des installations électriques** : le registre national ne fournit
+  aucune coordonnée ; les sites sont géocodés au **centroïde de leur commune**
+  (code INSEE, geo.api.gouv.fr ; écart possible de plusieurs km). Signalé dans
+  les fiches et le CSV (`Précision géo`). Trois communes déléguées ou périmées
+  ne sont pas géocodées.
 - **Échéances de contrat** : estimations (`année MES + durée réglementaire`) —
-  injection 15 ans ; cogé biogaz 20 ans (BG16 ; BG11/BG06 prolongés, arrêté du
-  24/02/2017) ; cogé gaz naturel C13 12 ans / C16 15 ans, rattachées par année de
-  MES alors que l'éligibilité dépendait de la date du CODOA. Avenants et
-  renégociations non captés ; 70 cogés sans date MES. À confirmer en entretien.
-  Voir issue #5.
+  injection 15 ans ; électricité biogaz 20 ans (BG16 ; BG11/BG06 prolongés,
+  arrêté du 24/02/2017). Avenants et renégociations non captés ; 13
+  installations sans date de MES. À confirmer en entretien.
+- **Coefficient CPB** : estimation à l'année de conversion par défaut (arrêté
+  du 26/12/2025), voir `METHODOLOGIE.md`.
 - **Filtre prospection v2** : périmètre thèse de la reprise du 18/09/2026 (détail
   dans l'app via le bouton ⓘ), seuils lus dans `tools/screening_params.json`.
-  Le plafond 25 GWh de la v1 est abandonné (guichet ouvert réservé aux < 13 GWh
-  puis abrogé) ; les cogés sont filtrées sur la puissance (≥ 250 kWé) et non
-  plus sur l'énergie.
-- **Millésime** : registre ODRÉ au 01/01/2025 ; radar cogé extrait mi-2026.
-  Pas de mise à jour automatique à ce stade.
+- **Outre-mer** : 24 installations (Guadeloupe, Guyane…) écartées par l'ETL,
+  hors du périmètre de la plateforme.
 
 ## Versioning v2 (septembre 2026)
 
@@ -69,7 +83,7 @@ Benoît Condoumi / Antoine de la Faire, apports de `biomethane-germany`) est ten
 dans [`BACKLOG.md`](BACKLOG.md) : une PR par étape, du plus simple au plus
 incertain.
 La logique de fonctionnement et les choix de design (règle, donnée, source de
-chaque filtre, journal des décisions) sont dans [`METHODOLOGIE.md`](METHODOLOGIE.md). Les seuils sont dans [`tools/screening_params.json`](tools/screening_params.json).
+chaque filtre, journal des décisions) sont dans [`METHODOLOGIE.md`](METHODOLOGIE.md).
 Contexte réglementaire : note `Biomethane France/Roadmap/2026-09-24_Annexe_reglementaire_Biomethane_France.md` (OneDrive Nautilus).
 
 ---

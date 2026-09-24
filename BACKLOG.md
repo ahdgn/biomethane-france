@@ -92,31 +92,46 @@ sans surprise. Vérification : app en local, rayon 50 km autour de Loudéac
   dont 300 sites qui auraient un coefficient 1 en 2028 parce qu'ils ont moins
   de 15 ans. Tranches d'échéance (MES + 20 ans) : ≤ 2026 : 1 ; 2027-2028 : 2 ;
   2029-2030 : 8 ; > 2030 : 312.
-- **Constat à discuter avec AdlF** : le registre EDF OA est dominé par des
-  cogénérations récentes (2018-2021 : 213 des 323 sites du périmètre), sous
-  contrat jusqu'en 2038-2041. Les cogés « historiques » 2008-2014 sont rares
-  (27). Soit le parc ancien est sous-représenté dans ce registre (à croiser
-  avec un autre registre, étape 5), soit la vague de fins de contrat est
-  beaucoup plus tardive que le discours « 1 000 cogés en fin de tarif ». Dans
-  les deux cas, la sortie anticipée sans pénalité (arrêté du 08/09/2025) et
-  le coefficient 1 des sites de moins de 15 ans changent la lecture : la
-  cible n'est pas la fin de contrat, c'est l'arbitrage économique du
-  producteur.
+- **Constat de l'étape 4, expliqué à l'étape 5** : l'extrait de juin 2026
+  (technologie « Cogénération ») écartait l'essentiel des sites 2007-2014. Sur
+  le registre complet, 161 sites du périmètre peuvent atteindre 0,95 et 50
+  arrivent en fin de contrat estimée d'ici 2030. La lecture « arbitrage
+  économique du producteur » reste valable pour les 570 sites à échéance après
+  2030 (sortie anticipée sans pénalité, coefficient 1 avant 15 ans).
 
 Assurance : élevée sur la règle (arrêté du 26/12/2025), moyenne sur la donnée
 (durée BG 20 ans = hypothèse, avenants non captés ; coefficient 1 avant 15 ans
 à confirmer pour une cogé convertie). Vérification : comptages Python = app,
 popup, tableau, liens v1.
 
-## Étape 5 — data : rafraîchissement des registres
+## Étape 5 — data : rafraîchissement des registres (PR #14)
 
-- [ ] Registre ODRÉ injection : millésime 01/01/2025 → dernier millésime 2026
-      (ETL à écrire dans `tools/build_injection_json.py`, aujourd'hui absent)
-- [ ] Registre cogé : ré-extraction et re-géocodage
-- [ ] Date d'extraction écrite dans les données (SOURCE_NOTE automatique)
+- [x] `tools/build_datasets.py` : les deux jeux téléchargés depuis ODRÉ (gratuit,
+      sans clé). Injection : 855 sites au 04/09/2026 (818 → 855, identifiants
+      stables 818/818, 37 nouveaux, 53 capacités révisées, 16,4 TWh/an).
+- [x] Électricité biogaz : registre national des installations de production
+      d'électricité, filière Bioénergies, édition au 31/07/2026 (mensuelle) :
+      1 225 installations en métropole (agrégats < 36 kW et outre-mer écartés),
+      géocodées au centroïde de commune par code INSEE (3 non géocodées).
+      Remplace l'extrait « radar » de juin 2026 (`build_cogen_json.py` supprimé).
+- [x] **Périmètre lu sur le code combustible B.MET, plus sur la technologie.**
+      L'extrait de juin filtrait « technologie = Cogénération » et écartait plus
+      de la moitié du parc méthanisation : 966 sites B.MET au registre contre
+      591 Bioénergies dans l'extrait ; périmètre v2 620 sites (contre 323),
+      dont ≥ 500 kWé 247 (80), ≥ 1 MWé 127 (31), zone test 310 (169) ;
+      0,95 atteignable 161 (27) ; échéances ≤ 2026 : 8, 2027-28 : 16,
+      2029-30 : 26, > 2030 : 570. Le constat de l'étape 4 est expliqué.
+- [x] Types de site renommés : « Élec. biogaz — méthanisation », « Élec. biogaz
+      — STEP / ISDND », « Élec. bioénergies — autres combustibles » ; les cogés
+      gaz naturel (thermique) ne sont plus chargées. Colonnes CSV : puissance,
+      code combustible, technologie.
+- [x] `data/meta.json` écrit par l'ETL (millésimes, dates de traitement),
+      note de source de l'app mise à jour.
 
-Assurance : moyenne-haute. Mécanique, mais les identifiants ODRÉ peuvent
-changer entre millésimes : vérifier la stabilité de `id_unique_projet`.
+Assurance : élevée. Vérification : comptages Python = app, contrôle
+géométrique 1 222/1 225 (3 sans coordonnées, 0 hors région), 540 des 554 sites
+Bioénergies de l'extrait de juin retrouvés (14 absents : agrégats, thermiques,
+outre-mer, sites sortis du registre).
 
 ## Étape 6 — feat : desserte gaz et distance au réseau (proxy)
 

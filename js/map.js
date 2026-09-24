@@ -163,8 +163,8 @@ const MapView = (() => {
     ];
     if (d.base === 'cogen' && d.puissanceKw)
       rows.splice(2, 0, ['Puissance', `${fmtNum(d.puissanceKw, 0)} kW`]);
-    if (d.base === 'cogen' && d.combustible)
-      rows.splice(1, 0, ['Combustible', d.combustible]);
+    if (d.base === 'cogen')
+      rows.splice(1, 0, ['Combustible', d.combustible || (d.codeCombustible ? `code ${d.codeCombustible}` : '—')]);
     if (d.echeanceAnnee != null)
       rows.push(['Échéance contrat (est.)',
         d.echeanceTrancheLabel ? `${d.echeanceAnnee} · tranche ${d.echeanceTrancheLabel}` : String(d.echeanceAnnee)]);
@@ -267,7 +267,7 @@ const MapView = (() => {
       </button>
       <div class="map-legend-body">
       ${types.map(t => {
-        const diamond = t.startsWith('Cogénération') ? ' diamond' : '';
+        const diamond = t.startsWith('Élec.') ? ' diamond' : '';
         return `<div class="legend-item" data-type="${escapeHtml(t)}" role="button" tabindex="0"
              title="Cliquer pour masquer / afficher ce type">
           <span class="type-dot${diamond}" style="background:${typeColor(t)}"></span>
@@ -275,7 +275,7 @@ const MapView = (() => {
           <span class="type-count">${counts[t].toLocaleString('fr-FR')}</span>
         </div>`;
       }).join('')}
-      ${hasCogen && hasCommune ? '<div class="legend-note">◆ cogénérations — position à la commune</div>' : ''}
+      ${hasCogen && hasCommune ? '<div class="legend-note">◆ élec. biogaz — position à la commune</div>' : ''}
       <div class="legend-note">Taille du point ∝ capacité</div>
       </div>`;
 

@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Cartographie et analyse des points d'injection de biométhane et des cogénérations en France.">
+  <meta name="description" content="Cartographie et analyse des points d'injection de biométhane et des installations électriques biogaz (cibles de conversion) en France.">
   <title>Biométhane France — Portail de suivi</title>
   <link rel="icon" type="image/png" href="assets/nautilus-icon.png">
 
   <!-- Librairies vendorisées (pas de CDN, pas de fonte externe) -->
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
-  <link rel="stylesheet" href="css/style.css?v=20260924-3">
+  <link rel="stylesheet" href="css/style.css?v=20260924-4">
 </head>
 <body>
 
@@ -58,7 +58,7 @@
           <strong>Périmètre appliqué</strong> (reprise 18/09/2026 · BC 14/09/2026 · seuils dans tools/screening_params.json)
           <ul>
             <li><b>Injection</b> : agricole autonome / agricole territorial / industriel territorial · site ouvert · capacité ≥ 5 GWh/an. Plus de plafond 25 GWh : le guichet ouvert est réservé aux &lt; 13 GWh depuis l'arrêté du 10/08/2026 et abrogé au 31/12/2026.</li>
-            <li><b>Cogénérations</b> : filière bioénergies · en service · méthanisation (hors bois, déchets ménagers ou industriels, papeterie, biogaz de STEP) · puissance ≥ 250 kWé (plancher BC / GRDF ; cible 500 kWé, priorité 1 MWé via le filtre Puissance)</li>
+            <li><b>Élec. biogaz</b> : code combustible B.MET (biogaz de méthanisation, toutes technologies ; hors STEP, ISDND, bagasse, bois, déchets) · en service · puissance ≥ 250 kWé (plancher BC / GRDF ; cible 500 kWé, priorité 1 MWé via le filtre Puissance)</li>
           </ul>
           Se combine avec les autres filtres (échéance, puissance, zone test).
         </div>
@@ -71,9 +71,9 @@
         </div>
       </div>
 
-      <!-- Puissance cogé minimale (kWé) -->
+      <!-- Puissance électrique minimale (kWé) -->
       <div class="filter-group">
-        <span class="filter-label" id="label-power">Puissance cogé (kWé)</span>
+        <span class="filter-label" id="label-power">Puissance élec. biogaz (kWé)</span>
         <div class="segmented" id="filter-power" role="group" aria-labelledby="label-power">
           <button class="seg-btn" data-power="" aria-pressed="true">Toutes</button>
           <button class="seg-btn" data-power="250" aria-pressed="false">≥ 250</button>
@@ -143,12 +143,12 @@
       <div class="filter-group">
         <span class="filter-label" id="label-window">Échéance de contrat estimée</span>
         <div class="segmented" id="filter-window" role="group" aria-labelledby="label-window"></div>
-        <span class="filter-hint">Tranches BC 14/09/2026. Estimation : injection 15 ans · cogé biogaz 20 ans · gaz naturel C13/C16 12/15 ans ; sites sans date de MES exclus quand une tranche est choisie.</span>
+        <span class="filter-hint">Tranches BC 14/09/2026. Estimation : injection 15 ans · élec. biogaz 20 ans (contrats BG) ; sites sans date de MES exclus quand une tranche est choisie.</span>
       </div>
 
-      <!-- Coefficient CPB (cogénérations biogaz) -->
+      <!-- Coefficient CPB (méthanisation) -->
       <div class="filter-group">
-        <span class="filter-label" id="label-cpb">Coefficient CPB (cogé biogaz)</span>
+        <span class="filter-label" id="label-cpb">Coefficient CPB (méthanisation)</span>
         <div class="segmented" id="filter-cpb" role="group" aria-labelledby="label-cpb">
           <button class="seg-btn" data-cpb="" aria-pressed="true">Tous</button>
           <button class="seg-btn" data-cpb="095" aria-pressed="false">0,95 atteignable</button>
@@ -270,9 +270,9 @@
                   <th scope="col" data-sort="capacite" class="col-num">Capacité (GWh/an)</th>
                   <th scope="col" data-sort="dateMes">Mise en service</th>
                   <th scope="col" data-sort="echeanceAnnee" class="col-num"
-                      title="Échéance de contrat estimée — injection 15 ans · cogé biogaz 20 ans · gaz naturel C13/C16 12/15 ans">Échéance (est.)</th>
+                      title="Échéance de contrat estimée — injection 15 ans · élec. biogaz 20 ans (contrats BG)">Échéance (est.)</th>
                   <th scope="col" data-sort="cpbCoef" class="col-num"
-                      title="Coefficient CPB estimé à l'année de conversion par défaut (cogé biogaz) — arrêté du 26/12/2025">Coef. CPB</th>
+                      title="Coefficient CPB estimé à l'année de conversion par défaut (méthanisation) — arrêté du 26/12/2025">Coef. CPB</th>
                   <th scope="col" data-sort="ouvert">Statut</th>
                 </tr>
               </thead>
@@ -301,11 +301,11 @@
   <script src="vendor/chartjs/chart.umd.min.js"></script>
 
   <!-- App -->
-  <script src="js/config.js?v=20260924-3"></script>
-  <script src="js/filters.js?v=20260924-3"></script>
-  <script src="js/map.js?v=20260924-3"></script>
-  <script src="js/charts.js?v=20260924-3"></script>
-  <script src="js/table.js?v=20260924-3"></script>
-  <script src="js/app.js?v=20260924-3"></script>
+  <script src="js/config.js?v=20260924-4"></script>
+  <script src="js/filters.js?v=20260924-4"></script>
+  <script src="js/map.js?v=20260924-4"></script>
+  <script src="js/charts.js?v=20260924-4"></script>
+  <script src="js/table.js?v=20260924-4"></script>
+  <script src="js/app.js?v=20260924-4"></script>
 </body>
 </html>

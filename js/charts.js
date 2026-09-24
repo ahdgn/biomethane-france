@@ -175,7 +175,7 @@ const Charts = (() => {
 
     const BASE_STYLE = {
       injection: { label: 'Injection', color: PALETTE.teal },
-      cogen: { label: 'Cogénérations', color: PALETTE.navy },
+      cogen: { label: 'Élec. biogaz', color: PALETTE.navy },
     };
 
     const datasets = bases.map(base => {
@@ -229,7 +229,7 @@ const Charts = (() => {
     const source = onlyCogen ? data : inj;
     const title = document.getElementById('chart-regions-title');
     title.textContent = onlyCogen
-      ? 'Énergie électrique injectée par région (cogé)'
+      ? 'Énergie électrique injectée par région (élec. biogaz)'
       : 'Capacité d\'injection par région';
     chartRegions.options.scales.x.title.text = onlyCogen ? CAP_UNITS.cogen : CAP_UNITS.injection;
 

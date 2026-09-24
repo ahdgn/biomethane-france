@@ -31,10 +31,10 @@ const DataTable = (() => {
     // unités hétérogènes entre bases -> astérisque + note de bas de tableau
     const capTh = document.querySelector('#data-table th[data-sort="capacite"]');
     capTh.textContent = 'Capacité*';
-    capTh.title = 'Injection : GWh PCS/an · Cogénération : GWh électriques/an';
+    capTh.title = 'Injection : GWh PCS/an · Élec. biogaz : GWh électriques injectés (année glissante)';
     const note = document.createElement('span');
     note.className = 'table-note';
-    note.textContent = '* injection : GWh/an · cogé : GWh él/an';
+    note.textContent = '* injection : GWh/an · élec. biogaz : GWh él/an';
     document.getElementById('table-range').after(note);
   }
 
@@ -94,7 +94,7 @@ const DataTable = (() => {
 
       const unit = CAP_UNITS[d.base] || '';
       const baseCell = hasCogen
-        ? `<td>${d.base === 'cogen' ? 'Cogé' : 'Injection'}</td>` : '';
+        ? `<td>${d.base === 'cogen' ? 'Élec. biogaz' : 'Injection'}</td>` : '';
 
       tr.innerHTML = `
         ${baseCell}
@@ -108,7 +108,7 @@ const DataTable = (() => {
         <td class="col-num" title="${unit}">${fmtNum(d.capacite, 2)}</td>
         <td>${fmtDate(d.dateMes)}</td>
         <td class="col-num" title="${escapeHtml(d.echeanceHyp || 'estimation non disponible')}">${d.echeanceAnnee != null ? d.echeanceAnnee : '—'}</td>
-        <td class="col-num" title="${d.cpb ? escapeHtml(d.cpb.atteignable ? `0,95 atteignable de ${d.cpb.first} à ${d.cpb.last}` : `0,95 hors d'atteinte (âge ${d.cpb.ageConv} ans en ${d.cpb.conv})`) : 'cogé biogaz seulement'}">${d.cpbCoef != null ? fmtNum(d.cpbCoef, 2) : '—'}</td>
+        <td class="col-num" title="${d.cpb ? escapeHtml(d.cpb.atteignable ? `0,95 atteignable de ${d.cpb.first} à ${d.cpb.last}` : `0,95 hors d'atteinte (âge ${d.cpb.ageConv} ans en ${d.cpb.conv})`) : 'méthanisation seulement'}">${d.cpbCoef != null ? fmtNum(d.cpbCoef, 2) : '—'}</td>
         <td><span class="status-tag ${d.ouvert ? 'open' : 'closed'}">${d.ouvert ? 'Ouvert' : 'Fermé'}</span></td>
       `;
 
@@ -192,17 +192,20 @@ const DataTable = (() => {
     if (currentData.length === 0) return;
 
     const headers = ['Base', 'Projet', 'Commune', 'Département', 'Région', 'Type',
-      'Capacité (GWh/an)', 'Unité capacité', 'Mise en service',
+      'Capacité (GWh/an)', 'Unité capacité', 'Puissance (kWé)', 'Code combustible', 'Technologie', 'Mise en service',
       'Échéance contrat estimée', 'Tranche échéance', 'Hypothèse durée contrat',
       'Âge à la conversion (année par défaut)', 'Coefficient CPB estimé', 'Fenêtre 0,95 (première année)', 'Fenêtre 0,95 (dernière année)',
       'Opérateur', 'Réseau / technologie',
       'Statut', 'Latitude', 'Longitude', 'Précision géo', 'Lien Google Maps'];
 
     const rows = currentData.map(d => [
-      d.base === 'cogen' ? 'Cogénération' : 'Injection',
+      d.base === 'cogen' ? 'Élec. biogaz' : 'Injection',
       d.nom, d.commune, d.departement, d.region, d.type,
       d.capacite != null ? String(d.capacite).replace('.', ',') : '',
       CAP_UNITS[d.base] || '',
+      d.puissanceKw != null ? String(d.puissanceKw).replace('.', ',') : '',
+      d.codeCombustible || '',
+      d.technologie || '',
       d.dateMes || '',
       d.echeanceAnnee != null ? d.echeanceAnnee : '',
       d.echeanceTrancheLabel || '',

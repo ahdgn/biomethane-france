@@ -5,7 +5,7 @@ choix de design : ce que l'outil filtre, pourquoi, sur quelle donnée et sur
 quelle source. Il est tenu à jour à chaque PR qui modifie une règle. Le plan de
 versions est dans `BACKLOG.md`, les seuils dans `tools/screening_params.json`.
 
-Dernière mise à jour : 24 septembre 2026 (PR #13, fenêtre CPB 0,95 et tranches d'échéance).
+Dernière mise à jour : 24 septembre 2026 (PR #14, rafraîchissement des registres ODRÉ et périmètre sur code combustible).
 
 ---
 
@@ -29,13 +29,18 @@ filtré, puis une shortlist, que l'équipe enrichit de sa connaissance propre
 
 | Jeu | Source | Millésime | Précision géographique | Champs clés |
 |---|---|---|---|---|
-| Points d'injection (818) | Registre ODRÉ des installations de production de biométhane | 01/01/2025 | Coordonnées du site | type de site, capacité GWh PCS/an, année de MES, réseau, PITD, site ouvert |
-| Cogénérations (1 002) | Registre EDF OA des installations sous obligation d'achat électricité | mi-2026 | Centroïde de la commune | filière, combustible, technologie, puissance kWé, statut, date de MES, énergie injectée |
+| Points d'injection (855) | ODRÉ, `points-dinjection-de-biomethane-en-france` (NaTran / GRDF) | 04/09/2026 | Coordonnées du site | type de site, capacité GWh PCS/an, année de MES, réseau, PITD, site ouvert, procédé |
+| Électricité biogaz (1 225) | ODRÉ, registre national des installations de production d'électricité (RTE, Enedis, ELD), filière Bioénergies, édition mensuelle | au 31/07/2026 | Centroïde de la commune (code INSEE) | code combustible, technologie, puissance kWé, régime, dates de MES et de raccordement, énergie annuelle glissante injectée, code EIC |
 
-Limites connues : pas de coordonnées de site pour les cogénérations, pas de
-tracé de réseau gaz en open data, dates de fin de contrat estimées (durée
-réglementaire ajoutée à l'année de MES, avenants non captés), 70 cogénérations
-sans date de MES, 2 sans puissance.
+Rafraîchissement : `tools/build_datasets.py` (ODRÉ, gratuit, sans clé) puis
+`tools/check_geo.py --apply`. Les identifiants ODRÉ des points d'injection
+(`id_unique_projet`) sont stables entre millésimes (818 sur 818 retrouvés entre
+janvier 2025 et septembre 2026).
+
+Limites connues : pas de coordonnées de site pour les installations
+électriques, pas de tracé de réseau gaz en open data, dates de fin de contrat
+estimées (durée réglementaire ajoutée à l'année de MES, avenants non captés),
+13 installations sans date de MES, 3 communes non géocodées, outre-mer écarté.
 
 ## 3. Cadre réglementaire pris en compte (été 2026)
 
@@ -62,20 +67,23 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
 
 ## 4. Filtres : règle, donnée, justification, source
 
-### 4.1 Cogénérations : périmètre de base
+### 4.1 Électricité biogaz : périmètre de base
 
-- **Règle** : filière « Bioénergies », statut « En service », combustible non
-  renseigné.
-- **Donnée** : `filiere`, `statut`, `combustible` du registre EDF OA.
-- **Justification** : le registre mélange toutes les cogénérations, y compris
-  les centrales thermiques au gaz naturel. Seule la filière Bioénergies
-  contient des méthaniseurs. Dans cette filière, le combustible n'est
-  renseigné que pour le bois, les déchets ménagers ou industriels, la
-  papeterie et le biogaz de STEP, tous hors cible de conversion. Un
-  combustible vide correspond à la méthanisation agricole ou territoriale.
-- **Source** : structure du registre (591 Bioénergies, dont 527 sans
-  combustible) ; BC 14/09/2026 (STEP à écarter, prudence biodéchets).
-  Règle héritée de la v1 (weekly 12/06/2026).
+- **Règle** : code combustible `B.MET` (biogaz de méthanisation), régime
+  « En service », **quelle que soit la technologie déclarée**.
+- **Donnée** : `codecombustible`, `regime` du registre national ODRÉ.
+- **Justification** : le registre national classe les installations biogaz
+  sous des technologies hétérogènes (« Cogénération à combustion » 471,
+  « Autre » 267, vide 108, turbines, moteurs à piston…). Le code combustible
+  est le seul champ qui identifie la méthanisation sans ambiguïté ; `B.EPU`,
+  `B.STO` et `BAGAS` (STEP, ISDND, bagasse) et les combustibles solides ou
+  déchets sont hors cible de conversion.
+- **Historique** : la v1 et l'étape 2 travaillaient sur un extrait filtré sur
+  la technologie « Cogénération » (591 sites Bioénergies). Ce filtre écartait
+  plus de la moitié du parc méthanisation (966 sites `B.MET` au registre),
+  dont l'essentiel des sites 2007-2014. Corrigé à l'étape 5 (PR #14).
+- **Source** : profil du registre national au 31/07/2026 ; BC 14/09/2026
+  (STEP à écarter, prudence biodéchets).
 
 ### 4.2 Cogénérations : puissance minimale
 
@@ -90,8 +98,9 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
   « au-dessus de 1 MW, tu te poses pas de question ; en dessous de 250 kW,
   pas viable ») ; AdlF 18/09/2026 (confirmation) ; GRDF, guide de
   conversion, novembre 2025 (seuil d'étude 250 à 300 kWé).
-- **Effet** : 522 méthaniseurs en service, 323 à ≥ 250 kWé, 80 à ≥ 500,
-  31 à ≥ 1 000.
+- **Effet** (registre au 31/07/2026) : 966 méthaniseurs, 620 en service à
+  ≥ 250 kWé, 247 à ≥ 500, 127 à ≥ 1 000. (Extrait de juin 2026 : 323 / 80 /
+  31.)
 
 ### 4.3 Injection : types de sites
 
@@ -123,10 +132,11 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
 - **Source** : arrêté du 10/08/2026 ; délibération CRE n° 2026-171 du
   28/07/2026 ; annexe réglementaire 24/09/2026, section 3.1. Décision AG
   24/09/2026.
-- **Effet** : 569 sites en v1, 713 en v2. Les 144 sites ajoutés dépassent
-  25 GWh (jusqu'à 268 GWh). Point ouvert : ces grandes unités sont dans le
-  périmètre réglementaire, pas nécessairement dans la capacité d'achat de la
-  plateforme (5 à 7 M€ par objet selon BC).
+- **Effet** : 569 sites en v1, 713 en v2 sur le registre de janvier 2025,
+  746 sur celui de septembre 2026. Les sites ajoutés par la suppression du
+  plafond dépassent 25 GWh (jusqu'à 268 GWh). Point ouvert : ces grandes
+  unités sont dans le périmètre réglementaire, pas nécessairement dans la
+  capacité d'achat de la plateforme (5 à 7 M€ par objet selon BC).
 
 ### 4.5 Zone test
 
@@ -141,8 +151,8 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
   déformé la vue nationale.
 - **Source** : AdlF 18/09/2026, section 8 des notes ; choix « filtre plutôt
   que score » proposé par Claude, validé par AG le 24/09/2026.
-- **Effet** : 287 sites d'injection et 169 cogénérations (Grand Est 113,
-  Normandie 37, Hauts-de-France 19).
+- **Effet** (registres de septembre 2026) : 298 sites d'injection et 310
+  installations électriques biogaz du périmètre.
 
 ### 4.6 Tranches d'échéance de contrat
 
@@ -179,8 +189,10 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
 - **Source** : arrêté du 26/12/2025 modifiant l'arrêté du 6 juillet 2024
   (CPB), délibération CRE n° 2025-235 du 10/10/2025 ; annexe réglementaire
   24/09/2026, section 3.4.
-- **Effet** (périmètre v2) : 27 sites avec 0,95 atteignable, 296 hors
-  d'atteinte, dont 300 sites de moins de 15 ans en 2028 (coefficient 1).
+- **Effet** (périmètre v2, registre au 31/07/2026) : 161 sites avec 0,95
+  atteignable, 459 hors d'atteinte (491 sites de moins de 15 ans en 2028,
+  coefficient 1). Tranches d'échéance : ≤ 2026 : 8 ; 2027-2028 : 16 ;
+  2029-2030 : 26 ; > 2030 : 570.
 - **Limite** : le coefficient 1 pour une cogé convertie avant 15 ans est
   l'application de la règle générale, à confirmer ; l'année de conversion
   par défaut est un paramètre à valider avec AdlF.
@@ -228,17 +240,21 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
 | 24/09/2026 | Suppression du plafond 25 GWh ; puissance à la place de l'énergie ; zone test en filtre et non en score | AG | #10 |
 | 24/09/2026 | Vue satellite, rayon, contrôle géométrique (règle des 2 km), millésimes en données | Port de biomethane-germany | #12 |
 | 24/09/2026 | Tranches d'échéance BC ; coefficient CPB estimé et fenêtre 0,95 à conversion 2028 | Arrêté 26/12/2025, BC 14/09 | #13 |
+| 24/09/2026 | Registres ODRÉ de septembre 2026 ; périmètre électricité biogaz lu sur le code combustible B.MET et non sur la technologie ; outre-mer écarté | Profil du registre national | #14 |
 
 ## 7. Questions ouvertes
 
-- Le registre EDF OA compte peu de cogénérations biogaz antérieures à 2015
-  (27 sur 323 dans le périmètre) et beaucoup de 2018-2021 (213), sous contrat
-  jusqu'en 2038-2041. Parc ancien sous-représenté, ou vague de fins de contrat
-  plus tardive que le discours de la filière ? À croiser avec un second
-  registre à l'étape 5 et à discuter avec AdlF. Conséquence possible : la
-  cible brownfield se définit par l'arbitrage économique du producteur (sortie
-  anticipée sans pénalité, coefficient 1 avant 15 ans) plus que par la fin de
-  contrat.
+- **Résolu à l'étape 5.** Le parc ancien n'était pas sous-représenté au
+  registre, il était écarté par le filtre « technologie = Cogénération » de
+  l'extrait de juin 2026. Sur le registre complet, 161 sites du périmètre
+  peuvent atteindre le coefficient 0,95 (contre 27), et 50 arrivent en fin de
+  contrat estimée d'ici 2030 (contre 11). La lecture reste valable : 570 sites
+  du périmètre ont une échéance après 2030, et la cible brownfield se définit
+  aussi par l'arbitrage économique du producteur (sortie anticipée sans
+  pénalité, coefficient 1 avant 15 ans).
+- 127 méthaniseurs d'au moins 1 MWé au registre (62 en technologie « Autre »,
+  24 sans technologie) contre « une poignée » selon BC : à qualifier avec AdlF
+  (sites territoriaux, industriels, moteurs cumulés ?).
 
 - 31 méthaniseurs ≥ 1 MWé au registre contre « une poignée » selon BC :
   sites territoriaux ou industriels inclus, moteurs cumulés, ou périmètre

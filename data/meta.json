@@ -1,13 +1,19 @@
 {
-  "_comment": "Millésimes des jeux de données. Lu par app.js pour la note de source du pied de page. À mettre à jour par l'ETL (étape 5) à chaque rafraîchissement.",
+  "_comment": "Millésimes des jeux de données, écrits par tools/build_datasets.py. Lus par app.js pour la note de source.",
+  "build_date": "2026-09-24",
   "injection": {
-    "source": "Registre ODRÉ des installations de production de biométhane",
-    "extraction": "2025-01-01",
+    "source": "Points d'injection de méthane renouvelable et bas carbone en France en service",
+    "dataset": "points-dinjection-de-biomethane-en-france",
+    "extraction": "2026-09-04",
+    "records": 855,
     "geo": "coordonnées de site"
   },
   "cogen": {
-    "source": "Registre EDF OA des installations sous obligation d'achat (radar ACREnergy)",
-    "extraction": "2026-06-03",
-    "geo": "centroïde de commune (geo.api.gouv.fr)"
+    "source": "Registre national des installations de production et de stockage d'électricité (au 31/07/2026)",
+    "dataset": "registre-national-installation-production-stockage-electricite-agrege",
+    "extraction": "2026-07-31",
+    "data_processed": "2026-09-10",
+    "records": 1225,
+    "geo": "centroïde de commune (geo.api.gouv.fr, code INSEE)"
   }
 }

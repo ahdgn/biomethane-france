@@ -32,9 +32,21 @@ const CONFIG = (() => {
     'Déchets ménagers et biodéchets': PALETTE.terracotta,
     'ISDND': PALETTE.gold,
     'Power-to-méthane': PALETTE.amber,
-    'Cogénération — Bioénergies': PALETTE.navy,
-    'Cogénération — Autres filières': PALETTE.grey,
+    'Élec. biogaz — méthanisation': PALETTE.navy,
+    'Élec. biogaz — STEP / ISDND': PALETTE.violet,
+    'Élec. bioénergies — autres combustibles': PALETTE.grey,
   };
+  // Codes combustible du registre national (RTE / Enedis / ELD) :
+  // B.MET = biogaz de méthanisation, B.EPU = biogaz de STEP, B.STO = biogaz
+  // d'installation de stockage de déchets (ISDND), BAGAS = bagasse.
+  const COMB_METHA = 'B.MET';
+  const COMB_BIOGAZ_AUTRES = ['B.EPU', 'B.STO', 'BAGAS'];
+  function elecType(d) {
+    if (d.filiere !== 'Bioénergies') return 'Élec. bioénergies — autres combustibles';
+    if (d.code_combustible === COMB_METHA) return 'Élec. biogaz — méthanisation';
+    if (COMB_BIOGAZ_AUTRES.includes(d.code_combustible)) return 'Élec. biogaz — STEP / ISDND';
+    return 'Élec. bioénergies — autres combustibles';
+  }
   const TYPE_FALLBACK = PALETTE.grey;
 
   // Jeux de données. Le dashboard s'adapte : la base cogé est
@@ -67,23 +79,27 @@ const CONFIG = (() => {
     },
     {
       id: 'cogen',
-      label: 'Cogénérations',
-      labelLong: 'Cogénérations (cibles de conversion)',
+      label: 'Élec. biogaz',
+      labelLong: 'Installations de production d\'électricité à partir de biogaz (cibles de conversion)',
       url: 'data/cogenerations.json',
       marker: 'diamond',
       optional: true, // absent tant que l'ETL n'a pas tourné
+      /* Registre national des installations de production d'électricité,
+         filière Bioénergies, toutes technologies (cogénération à combustion,
+         « autre », moteur à piston, turbine…). Le périmètre méthanisation se
+         lit sur le code combustible B.MET, pas sur la technologie : l'ancien
+         radar (juin 2026) filtré sur « Cogénération » écartait plus de la
+         moitié du parc, dont l'essentiel des sites 2007-2014. */
       normalize: (d, i) => ({
-        id: 'cog-' + i,
+        id: 'cog-' + (d.code_eic || i),
         base: 'cogen',
         nom: d.nom || 'Confidentiel',
         commune: d.commune || '',
         departement: d.departement || '',
         region: d.region || '',
-        type: d.filiere === 'Bioénergies'
-          ? 'Cogénération — Bioénergies'
-          : 'Cogénération — Autres filières',
+        type: elecType(d),
         filiere: d.filiere || '',
-        capacite: d.energie_gwh_an || 0, // GWh électriques/an
+        capacite: d.energie_gwh_an || 0, // GWh électriques/an (énergie annuelle glissante injectée)
         annee: d.annee_mes || null,
         dateMes: d.date_mes || null,
         operateur: d.gestionnaire || '',
@@ -94,6 +110,8 @@ const CONFIG = (() => {
         geoPrecision: d.geo_precision || 'commune',
         puissanceKw: d.puissance_kw || null,
         combustible: d.combustible || '',
+        codeCombustible: d.code_combustible || '',
+        technologie: d.technologie || '',
       }),
     },
   ];
@@ -110,7 +128,7 @@ const CONFIG = (() => {
   const YEAR_FLOOR = 2000;
   const YEAR_FLOOR_LABEL = '< ' + YEAR_FLOOR;
 
-  const SOURCE_NOTE = 'Registre ODRÉ (biométhane, 01/01/2025) · Registre EDF OA (cogénérations)';
+  const SOURCE_NOTE = 'ODRÉ : points d\'injection de biométhane · registre national des installations de production d\'électricité (filière Bioénergies)';
 
   // ---- Formats français ----
   const fmtInt = (n) => (n == null ? '—' : Math.round(n).toLocaleString('fr-FR'));
@@ -143,7 +161,7 @@ const CONFIG = (() => {
     if (d.base === 'injection') {
       return { annee: d.annee + 15, hyp: 'tarif OA injection — 15 ans' };
     }
-    if (d.type === 'Cogénération — Bioénergies') {
+    if (d.base === 'cogen' && d.type.startsWith('Élec. biogaz')) {
       return { annee: d.annee + 20, hyp: 'contrat biogaz BG — 20 ans (BG16 ; BG11/BG06 prolongés, arrêté du 24/02/2017)' };
     }
     if ((d.filiere || '') === 'Thermique non renouvelable') {
@@ -212,7 +230,7 @@ const CONFIG = (() => {
        dernière année = min(2029, MES + 30)
      Uniquement pour les cogénérations biogaz avec année de MES. */
   function cpbInfo(d) {
-    if (d.type !== 'Cogénération — Bioénergies' || !d.annee) return null;
+    if (d.type !== 'Élec. biogaz — méthanisation' || !d.annee) return null;
     const c = PARAMS.cpb;
     const butoir = parseInt(String(c.date_butoir_injection).slice(0, 4), 10);
     const conv = c.annee_conversion_defaut;
@@ -236,12 +254,12 @@ const CONFIG = (() => {
        du 10/08/2026 et abrogé au 31/12/2026 ; un brownfield injection se
        valorise désormais tarif en cours + passerelle CPB, quelle que soit
        sa taille.
-     · Cogé : filière Bioénergies, en service, combustible non renseigné
-       (méthanisation ; bois, déchets ménagers/industriels, papeterie,
-       biogaz de STEP = hors cible de conversion), puissance >= plancher
-       (250 kWé, seuil BC/GRDF en dessous duquel une conversion n'est pas
-       viable). L'ancien seuil « >= 1 GWh él/an » est remplacé par la
-       puissance, qui est la donnée utilisée par la filière. */
+     · Élec. biogaz : code combustible B.MET (biogaz de méthanisation, toutes
+       technologies ; STEP, ISDND, bagasse, bois, déchets = hors cible de
+       conversion), en service, puissance >= plancher (250 kWé, seuil
+       BC/GRDF en dessous duquel une conversion n'est pas viable). L'ancien
+       seuil « >= 1 GWh él/an » est remplacé par la puissance, qui est la
+       donnée utilisée par la filière. */
   function prospection2(d) {
     if (d.base === 'injection') {
       const c = PARAMS.injection.capacite_gwh_an;
@@ -249,7 +267,7 @@ const CONFIG = (() => {
         && d.capacite >= (c.min || 0) && (c.max == null || d.capacite <= c.max);
     }
     if (d.base === 'cogen') {
-      return d.type === 'Cogénération — Bioénergies' && d.ouvert && !d.combustible
+      return d.type === 'Élec. biogaz — méthanisation' && d.ouvert
         && (d.puissanceKw || 0) >= PARAMS.cogen.puissance_kw.plancher;
     }
     return false;
