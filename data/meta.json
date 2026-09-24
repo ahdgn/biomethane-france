@@ -1,0 +1,13 @@
+{
+  "_comment": "Millésimes des jeux de données. Lu par app.js pour la note de source du pied de page. À mettre à jour par l'ETL (étape 5) à chaque rafraîchissement.",
+  "injection": {
+    "source": "Registre ODRÉ des installations de production de biométhane",
+    "extraction": "2025-01-01",
+    "geo": "coordonnées de site"
+  },
+  "cogen": {
+    "source": "Registre EDF OA des installations sous obligation d'achat (radar ACREnergy)",
+    "extraction": "2026-06-03",
+    "geo": "centroïde de commune (geo.api.gouv.fr)"
+  }
+}

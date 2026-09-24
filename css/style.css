@@ -585,6 +585,14 @@ button { font-family: inherit; }
 }
 .btn-secondary:hover { background: var(--teal-dim); }
 
+/* Curseur du filtre rayon */
+.radius-slider {
+  width: 100%;
+  margin: 6px 0 2px;
+  accent-color: #22788C;
+  cursor: pointer;
+}
+
 /* Habillage Leaflet */
 .leaflet-container { font-family: 'Roboto', Arial, sans-serif; }
 

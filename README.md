@@ -25,6 +25,8 @@ puis ouvrir <http://localhost:8000>.
 | `js/table.js` | Tableau trié/paginé, export CSV (`;` + BOM, compatible Excel FR) |
 | `data/` | Jeux de données JSON |
 | `tools/build_cogen_json.py` | ETL du radar cogé : Excel → JSON, géocodage au centroïde de commune (geo.api.gouv.fr) |
+| `tools/check_geo.py` | Contrôle géométrique : chaque site testé contre les contours des régions (`tools/geo/regions.geo.json`) ; `--apply` corrige la région ou retire des coordonnées hors de France |
+| `data/meta.json` | Millésimes des registres, affichés dans la note de source |
 
 ## Mettre à jour les cogénérations
 

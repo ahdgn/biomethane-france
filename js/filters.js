@@ -20,7 +20,9 @@ const Filters = (() => {
     prospection: false, // filtre prospection v2 (périmètre thèse, 18/09/2026)
     zone: false,        // zone test (Hauts-de-France, Grand Est, Normandie)
     power: '',          // '' | '250' | '500' | '1000' : puissance cogé minimale (kWé)
+    radius: null,       // null | { lat, lon, km, label } : recherche par rayon
   };
+  const RADIUS_MIN = 5, RADIUS_MAX = 150;
   const POWER_VALUES = ['250', '500', '1000'];
 
   const bounds = { yearMin: null, yearMax: null, hasPre: false };
@@ -41,6 +43,10 @@ const Filters = (() => {
     bindEvents();
     syncControls();
     applyFilters();
+    if (state.radius) {
+      updateRadiusUI();
+      MapView.showRadius(state.radius.lat, state.radius.lon, state.radius.km);
+    }
   }
 
   function computeBounds() {
@@ -120,6 +126,11 @@ const Filters = (() => {
     if (p.get('p') === '1' || p.get('p') === '2') state.prospection = true; // p=1 : anciens liens
     if (p.get('z') === '1') state.zone = true;
     if (p.has('k') && POWER_VALUES.includes(p.get('k'))) state.power = p.get('k');
+    if (p.has('rad')) {
+      const [la, lo, km] = p.get('rad').split(',').map(Number);
+      if (Number.isFinite(la) && Number.isFinite(lo) && Number.isFinite(km) && km >= RADIUS_MIN && km <= RADIUS_MAX)
+        state.radius = { lat: la, lon: lo, km: Math.round(km / 5) * 5, label: '' };
+    }
     if (p.has('y')) {
       const [a, b] = p.get('y').split('-').map(Number);
       if (a >= bounds.yearMin && a <= bounds.yearMax) state.yearMin = a;
@@ -143,6 +154,7 @@ const Filters = (() => {
     if (state.prospection) p.set('p', '2');
     if (state.zone) p.set('z', '1');
     if (state.power) p.set('k', state.power);
+    if (state.radius) p.set('rad', `${state.radius.lat},${state.radius.lon},${state.radius.km}`);
     if (state.yearMin !== bounds.yearMin || state.yearMax !== bounds.yearMax)
       p.set('y', `${state.yearMin}-${state.yearMax}`);
     if (state.types.size !== allTypes.length) p.set('t', [...state.types].join('|'));
@@ -251,6 +263,19 @@ const Filters = (() => {
       applyFilters();
     });
 
+    // Filtre rayon : curseur continu — le cercle et le zoom suivent le
+    // geste, le filtrage est debounce pour rester fluide.
+    let radiusTimeout;
+    document.getElementById('radius-km').addEventListener('input', (e) => {
+      if (!state.radius) return;
+      state.radius.km = parseInt(e.target.value, 10);
+      updateRadiusUI();
+      MapView.showRadius(state.radius.lat, state.radius.lon, state.radius.km);
+      clearTimeout(radiusTimeout);
+      radiusTimeout = setTimeout(applyFilters, 160);
+    });
+    document.getElementById('radius-clear').addEventListener('click', clearRadius);
+
     // Réinitialisation
     document.getElementById('btn-reset').addEventListener('click', resetFilters);
     const mapReset = document.getElementById('map-empty-reset');
@@ -320,6 +345,7 @@ const Filters = (() => {
     if (state.prospection) n++;
     if (state.zone) n++;
     if (state.power) n++;
+    if (state.radius) n++;
     if (state.types.size !== allTypes.length) n++;
     if (state.yearMin !== bounds.yearMin || state.yearMax !== bounds.yearMax) n++;
     return n;
@@ -334,6 +360,10 @@ const Filters = (() => {
     filteredData = allData.filter(d => {
       if (state.prospection && !prospection2(d)) return false;
       if (state.zone && !zoneTest(d)) return false;
+      if (state.radius) {
+        if (d.lat == null || d.lon == null) return false;
+        if (haversineKm(state.radius.lat, state.radius.lon, d.lat, d.lon) > state.radius.km) return false;
+      }
       // puissance : ne concerne que les cogés (l'injection n'a pas de kWé)
       if (state.power && d.base === 'cogen' && (d.puissanceKw || 0) < Number(state.power)) return false;
       if (state.base && d.base !== state.base) return false;
@@ -417,6 +447,9 @@ const Filters = (() => {
     state.prospection = false;
     state.zone = false;
     state.power = '';
+    state.radius = null;
+    updateRadiusUI();
+    MapView.hideRadius();
     state.types = new Set(allTypes);
     state.yearMin = bounds.yearMin;
     state.yearMax = bounds.yearMax;
@@ -424,9 +457,45 @@ const Filters = (() => {
     applyFilters();
   }
 
+  /* ---------------- filtre rayon ---------------- */
+
+  function haversineKm(lat1, lon1, lat2, lon2) {
+    const R = 6371, rad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
+    const a = Math.sin(dLat / 2) ** 2
+      + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+  }
+
+  // Appelé par le lien « 50 km autour » des popups carte
+  function setRadius(lat, lon, km, label) {
+    state.radius = { lat, lon, km, label: label || '' };
+    updateRadiusUI();
+    MapView.showRadius(lat, lon, km);
+    applyFilters();
+  }
+
+  function clearRadius() {
+    state.radius = null;
+    updateRadiusUI();
+    MapView.hideRadius();
+    applyFilters();
+  }
+
+  function updateRadiusUI() {
+    const group = document.getElementById('group-radius');
+    if (!group) return;
+    group.hidden = !state.radius;
+    if (!state.radius) return;
+    document.getElementById('radius-label').textContent = state.radius.label
+      ? `${state.radius.km} km autour de ${state.radius.label}`
+      : `${state.radius.km} km autour du point choisi`;
+    document.getElementById('radius-km').value = state.radius.km;
+  }
+
   function onChange(cb) { onChangeCallbacks.push(cb); }
   function getFiltered() { return filteredData; }
   function getState() { return state; }
 
-  return { init, onChange, getFiltered, getState, toggleType, resetFilters };
+  return { init, onChange, getFiltered, getState, toggleType, resetFilters, setRadius, clearRadius };
 })();
