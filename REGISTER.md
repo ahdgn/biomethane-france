@@ -68,6 +68,15 @@ clé, la base, le nom et la commune. Pour le brancher (une fois) :
 4. Le coller dans `REGISTER_FORM_URL` de `js/config.js`, incrémenter le
    `?v=` de `index.html`, PR.
 
+Lien branché le 24/09/2026 :
+`https://airtable.com/app2bwaGaaTnIBUVq/pagMrWulp0TcVqzD5/form` (formulaire
+d'interface, embarqué via `/embed/`). Partage public activé par Ahmed le
+24/09/2026 : le formulaire s'ouvre sans compte Airtable, le pré-remplissage
+fonctionne et la clé est masquée (vérifié dans un navigateur non connecté).
+Si le partage public est un jour désactivé, le panneau affichera « Veuillez
+vous connecter » ; le réactiver ou basculer sur une vue Formulaire classique
+(lien `shr…`).
+
 Tant que le lien est vide, le panneau affiche l'identité du site et explique
 que le formulaire n'est pas branché. Chaque envoi crée une nouvelle fiche ; si
 plusieurs fiches partagent une clé, la synchronisation garde la plus récente.

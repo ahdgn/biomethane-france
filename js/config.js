@@ -147,7 +147,7 @@ const CONFIG = (() => {
   /* Lien partagé du formulaire Airtable « Qualifier un site » (voir REGISTER.md).
      Vide = le panneau montre l'identité du site et explique que le formulaire
      n'est pas encore branché. */
-  const REGISTER_FORM_URL = '';
+  const REGISTER_FORM_URL = 'https://airtable.com/app2bwaGaaTnIBUVq/pagMrWulp0TcVqzD5/form';
 
   // Libellés des critères du score v2 (clés de screening_params.json)
   const SCORE_LABELS = {
