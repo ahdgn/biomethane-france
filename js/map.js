@@ -166,7 +166,15 @@ const MapView = (() => {
     if (d.base === 'cogen' && d.combustible)
       rows.splice(1, 0, ['Combustible', d.combustible]);
     if (d.echeanceAnnee != null)
-      rows.push(['Échéance contrat (est.)', String(d.echeanceAnnee)]);
+      rows.push(['Échéance contrat (est.)',
+        d.echeanceTrancheLabel ? `${d.echeanceAnnee} · tranche ${d.echeanceTrancheLabel}` : String(d.echeanceAnnee)]);
+    if (d.cpb) {
+      const c = d.cpb;
+      const coefTxt = fmtNum(c.coef, 2);
+      rows.push(['Coefficient CPB (est.)', c.atteignable
+        ? `${coefTxt} en ${c.conv} · 0,95 atteignable ${c.first === c.last ? 'en ' + c.first : 'de ' + c.first + ' à ' + c.last}`
+        : `${coefTxt} en ${c.conv} (âge ${c.ageConv} ans) · 0,95 hors d'atteinte`]);
+    }
 
     const hypNote = d.echeanceHyp
       ? `<div class="legend-note">Hypothèse : ${escapeHtml(d.echeanceHyp)}</div>` : '';

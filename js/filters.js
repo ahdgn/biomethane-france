@@ -16,7 +16,8 @@ const Filters = (() => {
     yearMax: null,
     operator: '',
     status: '',      // '' | 'open' | 'closed'
-    window: '',      // '' | 'echue' | '2026-2029' | '2030+'
+    window: '',      // '' | clé de tranche d'échéance (le2026, 2027-2028, 2029-2030, gt2030)
+    cpb: '',         // '' | '095' | '08' : coefficient CPB atteignable (cogé biogaz)
     prospection: false, // filtre prospection v2 (périmètre thèse, 18/09/2026)
     zone: false,        // zone test (Hauts-de-France, Grand Est, Normandie)
     power: '',          // '' | '250' | '500' | '1000' : puissance cogé minimale (kWé)
@@ -60,7 +61,17 @@ const Filters = (() => {
     state.yearMax = bounds.yearMax;
   }
 
+  function windowKeys() {
+    return CONFIG.PARAMS.cogen.echeance_tranches.map(t => t.key);
+  }
+
   function populateOptions() {
+    // Tranches d'échéance (depuis screening_params.json)
+    const win = document.getElementById('filter-window');
+    win.innerHTML = [{ key: '', label: 'Toutes' }, ...CONFIG.PARAMS.cogen.echeance_tranches]
+      .map(t => `<button class="seg-btn" data-window="${escapeHtml(t.key)}" aria-pressed="${t.key === state.window}">${escapeHtml(t.label)}</button>`)
+      .join('');
+
     // Base (uniquement si plusieurs jeux chargés)
     if (loadedBases.length > 1) {
       const group = document.getElementById('group-base');
@@ -122,7 +133,13 @@ const Filters = (() => {
     if (p.has('r')) state.region = p.get('r');
     if (p.has('o')) state.operator = p.get('o');
     if (p.has('s') && ['open', 'closed'].includes(p.get('s'))) state.status = p.get('s');
-    if (p.has('w') && ['echue', '2026-2029', '2030+'].includes(p.get('w'))) state.window = p.get('w');
+    if (p.has('w')) {
+      // anciens liens (v1) : échue -> ≤ 2026, 2026-2029 -> 2027-2028, 2030+ -> > 2030
+      const legacy = { 'echue': 'le2026', '2026-2029': '2027-2028', '2030+': 'gt2030' };
+      const w = legacy[p.get('w')] || p.get('w');
+      if (windowKeys().includes(w)) state.window = w;
+    }
+    if (p.has('c') && ['095', '08'].includes(p.get('c'))) state.cpb = p.get('c');
     if (p.get('p') === '1' || p.get('p') === '2') state.prospection = true; // p=1 : anciens liens
     if (p.get('z') === '1') state.zone = true;
     if (p.has('k') && POWER_VALUES.includes(p.get('k'))) state.power = p.get('k');
@@ -151,6 +168,7 @@ const Filters = (() => {
     if (state.operator) p.set('o', state.operator);
     if (state.status) p.set('s', state.status);
     if (state.window) p.set('w', state.window);
+    if (state.cpb) p.set('c', state.cpb);
     if (state.prospection) p.set('p', '2');
     if (state.zone) p.set('z', '1');
     if (state.power) p.set('k', state.power);
@@ -254,12 +272,20 @@ const Filters = (() => {
       infoBtn.setAttribute('aria-expanded', String(open));
     });
 
-    // Fenêtre de décision (échéance estimée)
+    // Fenêtre de décision (tranche d'échéance estimée)
     document.getElementById('filter-window').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-window]');
       if (!btn) return;
       state.window = btn.dataset.window;
       syncSegmented('filter-window', 'window', state.window);
+      applyFilters();
+    });
+    // Coefficient CPB (cogé biogaz)
+    document.getElementById('filter-cpb').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-cpb]');
+      if (!btn) return;
+      state.cpb = btn.dataset.cpb;
+      syncSegmented('filter-cpb', 'cpb', state.cpb);
       applyFilters();
     });
 
@@ -327,6 +353,7 @@ const Filters = (() => {
     });
     syncSegmented('filter-status', 'status', state.status);
     syncSegmented('filter-window', 'window', state.window);
+    syncSegmented('filter-cpb', 'cpb', state.cpb);
     document.getElementById('filter-prospection').checked = state.prospection;
     document.getElementById('filter-zone').checked = state.zone;
     syncSegmented('filter-power', 'power', state.power);
@@ -342,6 +369,7 @@ const Filters = (() => {
     if (state.operator) n++;
     if (state.status) n++;
     if (state.window) n++;
+    if (state.cpb) n++;
     if (state.prospection) n++;
     if (state.zone) n++;
     if (state.power) n++;
@@ -376,13 +404,11 @@ const Filters = (() => {
       if (!state.types.has(d.type)) return false;
       if (d.annee != null && (d.annee < yearMin || d.annee > state.yearMax)) return false;
       if (state.operator && d.operateur !== state.operator) return false;
-      if (state.window) {
-        const e = d.echeanceAnnee;
-        if (e == null) return false; // pas d'estimation possible -> hors fenêtre
-        const now = new Date().getFullYear();
-        if (state.window === 'echue' && e >= now) return false;
-        if (state.window === '2026-2029' && (e < 2026 || e > 2029)) return false;
-        if (state.window === '2030+' && e < 2030) return false;
+      if (state.window && d.echeanceTranche !== state.window) return false; // pas d'estimation -> hors fenêtre
+      // coefficient CPB : ne concerne que les cogés biogaz (l'injection passe)
+      if (state.cpb && d.base === 'cogen') {
+        if (!d.cpb) return false; // thermique ou sans année de MES
+        if (state.cpb === '095' ? !d.cpb.atteignable : d.cpb.atteignable) return false;
       }
       if (state.status === 'open' && !d.ouvert) return false;
       if (state.status === 'closed' && d.ouvert) return false;
@@ -444,6 +470,7 @@ const Filters = (() => {
     state.operator = '';
     state.status = '';
     state.window = '';
+    state.cpb = '';
     state.prospection = false;
     state.zone = false;
     state.power = '';
