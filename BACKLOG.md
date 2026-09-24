@@ -45,7 +45,21 @@ Assurance : très élevée. Aucun changement de comportement.
 Assurance : élevée. Données déjà présentes (`puissance_kw`, `filiere`,
 `combustible`). Vérification : comptages avant/après, contrôle sur 10 sites.
 
-## Étape 3 — feat : fenêtre CPB 0,95 et tranches d'échéance
+## Étape 3 — feat : apports faciles de l'outil allemand (front-end)
+
+- [ ] Vue satellite (Esri World Imagery, sans clé), bascule dans la carte
+- [ ] Recherche par rayon : lien « ⌖ 50 km autour » dans chaque popup, curseur
+      continu 10-100 km, auto-zoom, URL partageable (port de `biomethane-germany`)
+- [ ] Contrôle géométrique région / département : coordonnées ODRÉ validées
+      contre les polygones des régions (geo.api.gouv.fr, gratuit) ; la
+      géométrie fait foi, hors zone frontalière
+- [ ] Date d'extraction affichée depuis les données, plus en dur dans le code
+- Déjà en place côté France : lien Google Maps par site (Run 1, 27/07/2026)
+
+Assurance : très élevée. Code déjà écrit et testé sur l'outil allemand ;
+aucune donnée nouvelle. Vérification : ouverture de l'app, 5 rayons testés.
+
+## Étape 4 — feat : fenêtre CPB 0,95 et tranches d'échéance
 
 - [ ] Âge de l'installation à une date de conversion paramétrable (défaut 2028)
 - [ ] Drapeau « coefficient 0,95 possible » : 15 ≤ âge ≤ 30 ans à la conversion
@@ -57,7 +71,7 @@ Assurance : élevée. Données déjà présentes (`puissance_kw`, `filiere`,
 Assurance : élevée sur la règle (arrêté du 26/12/2025), moyenne sur la donnée
 (70 cogés sans date de MES ; durée BG 20 ans = hypothèse, avenants non captés).
 
-## Étape 4 — data : rafraîchissement des registres
+## Étape 5 — data : rafraîchissement des registres
 
 - [ ] Registre ODRÉ injection : millésime 01/01/2025 → dernier millésime 2026
       (ETL à écrire dans `tools/build_injection_json.py`, aujourd'hui absent)
@@ -67,7 +81,7 @@ Assurance : élevée sur la règle (arrêté du 26/12/2025), moyenne sur la donn
 Assurance : moyenne-haute. Mécanique, mais les identifiants ODRÉ peuvent
 changer entre millésimes : vérifier la stabilité de `id_unique_projet`.
 
-## Étape 5 — feat : desserte gaz et distance au réseau (proxy)
+## Étape 6 — feat : desserte gaz et distance au réseau (proxy)
 
 - [ ] Jointure « commune desservie en gaz » (open data GRDF / ELD) par code
       INSEE : oui / non / inconnu
@@ -80,7 +94,7 @@ canalisation à moins de 5 km du site, et les cogés sont géocodées au centro�
 de commune. Les tracés GRDF ne sont pas en open data ; ratios de coût au km
 attendus d'AdlF. À remplacer par les études GRDF site par site sur la shortlist.
 
-## Étape 6 — feat : score v2 /100 et export Excel shortlist
+## Étape 7 — feat : score v2 /100 et export Excel shortlist
 
 - [ ] Port de `qualification_sites.py` (OneDrive, 10/06/2026) dans
       `tools/qualify_v2.py`, lecture des seuils dans `screening_params.json`
@@ -94,7 +108,7 @@ attendus d'AdlF. À remplacer par les études GRDF site par site sur la shortlis
 Assurance : moyenne. La pondération est une décision d'équipe ; le classement
 sera contrôlé sur les sites connus d'AdlF (dizaine de sites, action du 18/09).
 
-## Étape 7 — feat : registre équipe Airtable et panneau Qualifier
+## Étape 8 — feat : registre équipe Airtable et panneau Qualifier
 
 - [ ] Port de `js/qualify.js`, `REGISTER.md`, `tools/sync_register.py` depuis
       `biomethane-germany`
@@ -108,7 +122,7 @@ sera contrôlé sur les sites connus d'AdlF (dizaine de sites, action du 18/09).
 Assurance : moyenne. Mécanique validée en Allemagne le 18/09 ; dépend de la
 création de la base (connecteur Airtable en écriture).
 
-## Étape 8 — feat : enrichissement Pappers (étage 2)
+## Étape 9 — feat : enrichissement Pappers (étage 2)
 
 - [ ] Port de `etage2_succession.py` : SIREN, forme, dirigeants, âge, signal de
       succession, résultat net ; ajout de la structure du capital (part
@@ -118,13 +132,27 @@ création de la base (connecteur Airtable en écriture).
 Assurance : moyenne. Fiabilité du rapprochement nom de site → SIREN notée
 HAUTE / MOYENNE / FAIBLE, à revoir manuellement sur la shortlist.
 
-## Étape 9 — feat : régime ICPE et zonage PLU
+## Étape 10 — feat : régime ICPE et zonage PLU
 
 - [ ] Base Géorisques ICPE (rubrique 2781) : régime autorisation /
       enregistrement / déclaration, jointure par commune et nom
 - [ ] Zonage PLU du site via `cadastre-nautilus` (zone A, N, U, AU)
 
 Assurance : moyenne-faible. Rapprochements incertains, à valider site par site.
+
+## Coûts et appels d'API
+
+Règle : aucun appel payant sans accord préalable d'Ahmed, avec le nombre
+d'appels et le coût estimé annoncés avant le lancement.
+
+| Ressource | Étapes | Coût |
+|---|---|---|
+| Registre ODRÉ, registre EDF OA, geo.api.gouv.fr, open data GRDF, Géorisques, cadastre Etalab | 4, 5, 10 | Gratuit |
+| Fonds de carte Esri (gris, satellite) | 3 | Gratuit sans clé, usage léger |
+| GitHub, GitHub Pages | toutes | Gratuit (dépôt public) |
+| Airtable (base registre) | 8 | Plan existant, pas de coût marginal |
+| **Pappers API** (SIREN, dirigeants, bénéficiaires effectifs, comptes) | **9** | **Payant, facturé à l'appel (crédits). Étage 2 v1 du 10/06/2026 déjà passé par là. Limité à la shortlist ; accord explicite avant chaque lot** |
+| Tracés de réseau GRDF / Natran | parqué | Payant ou sur demande, décision après les ratios d'AdlF |
 
 ## Parqués
 
