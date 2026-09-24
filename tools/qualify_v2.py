@@ -177,13 +177,22 @@ ELEC_HEADERS = ["Rang", "Priorité", "Score /100", "Pts puissance", "Pts échéa
                 "Nom", "Commune", "Département", "Région", "Zone test", "Puissance kWé", "Énergie injectée GWh/an", "Facteur de charge",
                 "Technologie", "Mise en service", "Échéance estimée", "Coef. CPB 2028", "Fenêtre 0,95", "Distance GRDF km",
                 "Injection la plus proche km", "Injection la plus proche", "Zonage", "Zonage maturité", "Zonage capacité max Nm3/h",
-                "Gestionnaire", "Code EIC", "Latitude", "Longitude", "Google Maps",
+                "Gestionnaire", "Code EIC", "Latitude", "Longitude", "Google Maps (site)", "Google Maps (coordonnées)",
                 "Contact", "Statut prospection", "Commentaires AdlF"]
 INJ_HEADERS = ["Rang", "Priorité", "Score /100", "Pts capacité", "Pts tarif résiduel", "Pts type", "Pts augmentation",
                "Nom", "Commune", "Département", "Région", "Zone test", "Type de site", "Capacité GWh/an", "Mise en service",
                "Tarif restant (ans)", "Échéance tarif", "Augmentation prévue", "Réseau", "Gestionnaire", "PITD/PITP",
                "Zonage", "Zonage maturité", "Latitude", "Longitude", "Google Maps",
                "Contact", "Statut prospection", "Commentaires AdlF"]
+
+
+def gmaps_search(d):
+    """Lien Google Maps par recherche textuelle (cf. config.js gmapsLinks) : nom + commune,
+    ou « méthanisation + commune » si le nom est masqué au registre."""
+    from urllib.parse import quote
+    masked = str(d.get("nom") or "").strip().lower() in ("confidentiel", "-", "")
+    q = f"méthanisation {d.get('commune', '')} {d.get('departement', '')}" if masked else f"{d.get('nom')} {d.get('commune', '')}"
+    return "https://www.google.com/maps/search/?api=1&query=" + quote(q.strip())
 
 
 def elec_row(rank, d):
@@ -197,7 +206,7 @@ def elec_row(rank, d):
             d["score_meta"]["echeance"], d["score_meta"]["coef"], f"{f[0]}-{f[1]}" if f else "hors d'atteinte",
             d.get("dist_grdf_km"), d.get("dist_injection_km"), d.get("injection_proche"),
             z.get("libelle"), z.get("maturite"), z.get("capamax"), d.get("gestionnaire"), d.get("code_eic"), lat, lon,
-            f"https://www.google.com/maps?q={lat},{lon}" if lat is not None else "", "", "", ""]
+            gmaps_search(d), f"https://www.google.com/maps?q={lat},{lon}" if lat is not None else "", "", "", ""]
 
 
 def inj_row(rank, d):
