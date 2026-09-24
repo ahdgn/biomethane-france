@@ -201,7 +201,7 @@ const DataTable = (() => {
       'Distance réseau GRDF (km, est.)', 'Point d\'injection le plus proche', 'Distance injection (km)',
       'Zonage de raccordement', 'Zonage maturité', 'Zonage capacité max (Nm3/h)', 'Zonage capacité en attente',
       'Opérateur', 'Réseau / technologie',
-      'Statut', 'Latitude', 'Longitude', 'Précision géo', 'Lien Google Maps'];
+      'Statut', 'Latitude', 'Longitude', 'Précision géo', 'Lien Google Maps (site)', 'Lien Google Maps (coordonnées)'];
 
     const rows = currentData.map(d => [
       d.base === 'cogen' ? 'Élec. biogaz' : 'Injection',
@@ -238,6 +238,7 @@ const DataTable = (() => {
       d.lat != null ? String(d.lat).replace('.', ',') : '',
       d.lon != null ? String(d.lon).replace('.', ',') : '',
       d.geoPrecision || '',
+      (() => { const gl = CONFIG.gmapsLinks(d); return gl.primary ? gl.primary.href : ''; })(),
       (d.lat != null && d.lon != null) ? `https://www.google.com/maps?q=${d.lat},${d.lon}` : '',
     ]);
 

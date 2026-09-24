@@ -219,9 +219,10 @@ const MapView = (() => {
       ? `<div class="legend-note">Hypothèse : ${escapeHtml(d.echeanceHyp)}</div>` : '';
     const geoNote = d.geoPrecision === 'commune'
       ? `<div class="legend-note">Position au centre de la commune</div>` : '';
-    const gmaps = (d.lat != null && d.lon != null)
-      ? `<a class="popup-link" href="https://www.google.com/maps?q=${d.lat},${d.lon}"
-           target="_blank" rel="noopener noreferrer">Google Maps ↗</a>` : '';
+    const gl = CONFIG.gmapsLinks(d);
+    const gmaps = [gl.primary, gl.secondary].filter(Boolean).map(l =>
+      `<a class="popup-link" href="${l.href}" title="${escapeHtml(l.title)}"
+           target="_blank" rel="noopener noreferrer">${escapeHtml(l.label)}</a>`).join('\n        ');
     const radiusLink = (d.lat != null && d.lon != null)
       ? `<a class="popup-link" href="#" data-radius-id="${escapeHtml(d.id)}"
            title="Ne garder que les sites autour de celui-ci">⌖ 50 km autour</a>` : '';
