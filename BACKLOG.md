@@ -10,6 +10,8 @@ la règle appliquée, sa source, la vérification faite et les chiffres avant/ap
 Les seuils vivent dans `tools/screening_params.json`, jamais dans le code.
 Les exports Excel destinés à AdlF sont copiés dans
 `Biomethane France/Screening/` avec un suffixe de version.
+Chaque PR qui modifie une règle met à jour `METHODOLOGIE.md` (règle, donnée,
+justification, source, journal des décisions).
 
 ## Ce qui change de v1 à v2 (cadre réglementaire, été 2026)
 

@@ -65,7 +65,9 @@ scoring du radar sont ignorées.
 Le plan de mise à jour du screening (cadre réglementaire de l'été 2026, filtres
 Benoît Condoumi / Antoine de la Faire, apports de `biomethane-germany`) est tenu
 dans [`BACKLOG.md`](BACKLOG.md) : une PR par étape, du plus simple au plus
-incertain. Les seuils sont dans [`tools/screening_params.json`](tools/screening_params.json).
+incertain.
+La logique de fonctionnement et les choix de design (règle, donnée, source de
+chaque filtre, journal des décisions) sont dans [`METHODOLOGIE.md`](METHODOLOGIE.md). Les seuils sont dans [`tools/screening_params.json`](tools/screening_params.json).
 Contexte réglementaire : note `Biomethane France/Roadmap/2026-09-24_Annexe_reglementaire_Biomethane_France.md` (OneDrive Nautilus).
 
 ---
