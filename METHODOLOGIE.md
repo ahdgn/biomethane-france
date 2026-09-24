@@ -5,7 +5,7 @@ choix de design : ce que l'outil filtre, pourquoi, sur quelle donnée et sur
 quelle source. Il est tenu à jour à chaque PR qui modifie une règle. Le plan de
 versions est dans `BACKLOG.md`, les seuils dans `tools/screening_params.json`.
 
-Dernière mise à jour : 24 septembre 2026 (PR #17, registre équipe Airtable).
+Dernière mise à jour : 24 septembre 2026 (PR #22, géocodage ICPE et régime).
 
 ---
 
@@ -282,13 +282,37 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
   être créé dans Airtable par Ahmed et son lien collé dans la config ; la
   synchronisation est manuelle (script ou connecteur), commitée par PR.
 
-### 4.11 Ce qui n'est volontairement pas filtré
+### 4.11 Position réelle et régime ICPE (Géorisques)
+
+- **Règle** : chaque méthaniseur (B.MET) est rapproché des installations
+  classées de la rubrique 2781 de sa commune (code INSEE) ; candidat unique
+  → retenu ; plusieurs → similarité de nom, sinon premier par régime avec
+  mention « ambigu ». La position ICPE remplace le centroïde de commune
+  (`geo_precision` = « site (ICPE) »), le centroïde est conservé
+  (`lat_commune` / `lon_commune`), et le régime (autorisation, enregistrement,
+  déclaration) est lu sur la fiche. Distances GRDF et score recalculés.
+- **Donnée** : Géorisques, base des installations classées (WFS BRGM, licence
+  ouverte, édition 2026), rubrique 2781 ; `tools/geocode_icpe.py`.
+- **Justification** : le centroïde faussait le lien Google Maps (constat AG
+  24/09), la distance au réseau et la carte ; le régime ICPE est un critère de
+  qualification (BC 14/09 : permis et ICPE ; registre équipe).
+- **Effet** : 390 sites positionnés sur 966, 576 sans ICPE dans la
+  commune ; périmètre v2 à ≤ 5 km du réseau : 348 (avant
+  352) ; priorités A : 78 (avant 78).
+- **Retour arrière** : `python tools/geocode_icpe.py --restore` (centroïde
+  rétabli), tag git `v2-etapes-1-8`, classeurs datés conservés.
+- **Limites** : rapprochement par commune (un méthaniseur ICPE peut être une
+  autre unité que celle du registre électrique quand plusieurs coexistent),
+  ICPE parfois positionnée à l'adresse du siège, sites sans ICPE 2781 (petites
+  unités en déclaration non géolocalisées) laissés au centroïde.
+
+### 4.12 Ce qui n'est volontairement pas filtré
 
 | Critère | Pourquoi pas de filtre dur | Traitement prévu |
 |---|---|---|
 | Structure du capital, caractère agricole | Nécessite Pappers (payant) | Registre équipe (étape 8) puis Pappers, étape 9, shortlist seulement |
 | Intrants et C-score | Pas de donnée publique au niveau du site | Registre équipe (étape 8) |
-| Régime ICPE, zonage PLU | Rapprochements incertains | Étape 10, site par site |
+| Zonage PLU | Nécessite la position réelle (disponible depuis l'étape 10) et la base cadastrale | `cadastre-nautilus`, site par site sur la shortlist |
 
 ## 5. Principes de design
 
@@ -328,6 +352,8 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
 | 24/09/2026 | Distance au réseau GRDF (open data GRDF, exact au tronçon, mesuré au centroïde de commune), injection la plus proche, zonages de raccordement | BC 14/09, AdlF 18/09, GRDF | #15 |
 | 24/09/2026 | Score v2 : pondération proposée (élec. 25/25/15/20/15, injection 30/35/20/15), priorités calibrées par base, région neutre ; classeur shortlist | Proposition AG / Claude, à valider AdlF | #16 |
 | 24/09/2026 | Registre équipe Airtable (base France créée), panneau Qualifier, pipeline = projet renseigné, notes classées | Port de biomethane-germany, Daniel 09/09 et 21/09 | #17 |
+| 24/09/2026 | Lien Google Maps par recherche textuelle (site en vue satellite) | Constat AG | #20 |
+| 24/09/2026 | Position réelle et régime ICPE (Géorisques 2781), distances et score recalculés, retour arrière par script et tag | Décision AG (étape 10 élargie) | #22 |
 
 ## 7. Questions ouvertes
 
