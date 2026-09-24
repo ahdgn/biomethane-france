@@ -660,6 +660,28 @@ body.qualify-open .bottom-panel { display: none; }
 .popup-grid dt { color: var(--muted); }
 .popup-grid dd { font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
 .popup-foot { margin-top: 9px; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+/* Popup résumé : valeurs à gauche, chips, barre d'actions sur une ligne */
+.popup-grid-left { grid-template-columns: 112px 1fr; gap: 3px 10px; }
+.popup-grid-left dd { text-align: left; font-weight: 500; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.status-dot.open { background: var(--open); } .status-dot.closed { background: var(--closed); }
+.chip { display: inline-block; padding: 0 7px; border-radius: 10px; font-size: 11px; font-weight: 600; line-height: 17px; vertical-align: 1px; white-space: nowrap; }
+.chip-green { background: rgba(111,143,109,0.18); color: #3f6b3d; }
+.chip-amber { background: rgba(251,174,64,0.22); color: #8a5a00; }
+.chip-grey { background: rgba(127,127,127,0.15); color: #555; font-weight: 500; }
+.score-badge { display: inline-block; color: #fff; font-weight: 700; padding: 0 8px; border-radius: 10px; font-size: 11.5px; line-height: 18px; }
+.popup-actions { display: flex; gap: 4px; margin-top: 10px; border-top: 1px solid var(--hairline); padding-top: 8px; }
+.popup-actions .act { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; border-radius: 6px;
+  color: var(--teal); font-size: 10.5px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.popup-actions .act:hover { background: var(--teal-dim); }
+.popup-actions .act-ico { font-size: 15px; line-height: 16px; }
+/* Fiche complète (panneau latéral) */
+.fiche-sec { margin: 8px 0; border: 1px solid var(--hairline); border-radius: 6px; padding: 4px 10px 6px; background: #fff; }
+.fiche-sec summary { cursor: pointer; font-weight: 700; color: var(--navy); font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; padding: 3px 0; }
+.fiche-sec .popup-grid-left { grid-template-columns: 130px 1fr; margin-top: 4px; }
+.fiche-links { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 4px; font-size: 12px; }
+.qualify-site { max-height: 60%; }
+.qualify-drawer.mode-qualify .qualify-site { max-height: 32%; }
 .popup-link { color: var(--teal); font-weight: 500; text-decoration: none; }
 .popup-link:hover { text-decoration: underline; }
 
