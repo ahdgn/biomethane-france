@@ -44,34 +44,12 @@ const Qualify = (() => {
     return `${base}?${p.toString()}`;
   }
 
-  function identityHtml(d) {
-    const unit = CAP_UNITS[d.base] || '';
-    const rows = [
-      ['Clé', siteKey(d)],
-      ['Localisation', [d.commune, d.departement, d.region].filter(Boolean).join(' · ')],
-      ['Type', d.type],
-      ['Capacité', `${fmtNum(d.capacite, 2)} ${unit}`],
-      ['Mise en service', fmtDate(d.dateMes)],
-    ];
-    if (d.base === 'cogen' && d.puissanceKw) rows.splice(3, 0, ['Puissance', `${fmtNum(d.puissanceKw, 0)} kWé`]);
-    if (d.echeanceAnnee != null) rows.push(['Échéance contrat (est.)', String(d.echeanceAnnee)]);
-    if (d.cpbCoef != null) rows.push(['Coefficient CPB (est.)', fmtNum(d.cpbCoef, 2)]);
-    if (d.base === 'cogen') rows.push(['Réseau GRDF (est.)', d.distGrdf != null ? `${fmtNum(d.distGrdf, 1)} km` : 'inconnue']);
-    if (d.score != null) rows.push(['Score v2', `${fmtNum(d.score, 0)} / 100 · ${d.priorite}`]);
-    if (d.evalStatus && d.evalStatus !== 'unknown')
-      rows.push(['Statut actuel', EVAL_LABELS[d.evalStatus] || d.evalStatus]);
-    if (d.gridRating)
-      rows.push(['Difficulté raccordement', GRID_LABELS[d.gridRating] || d.gridRating]);
-    return `
-      <div class="qualify-name">${escapeHtml(d.nom)}</div>
-      <dl class="popup-grid">
-        ${rows.map(([k, v]) => `<dt>${k}</dt><dd>${escapeHtml(String(v || '—'))}</dd>`).join('')}
-      </dl>`;
-  }
-
-  function open(d) {
+  // mode 'fiche' : lecture ; mode 'qualify' : idem, formulaire mis en avant
+  function open(d, mode = 'fiche') {
     current = d;
-    document.getElementById('qualify-site').innerHTML = identityHtml(d);
+    document.getElementById('qualify-title').textContent = mode === 'qualify' ? 'Qualifier ce site' : 'Fiche site';
+    drawer.classList.toggle('mode-qualify', mode === 'qualify');
+    document.getElementById('qualify-site').innerHTML = MapView.detailHtml(d);
     const note = document.getElementById('qualify-noform');
     if (REGISTER_FORM_URL) {
       note.hidden = true;

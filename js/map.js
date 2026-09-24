@@ -101,7 +101,14 @@ const MapView = (() => {
       if (q) q.addEventListener('click', (ev) => {
         ev.preventDefault();
         const d = dataById.get(q.dataset.qualifyId);
-        if (d) Qualify.open(d);
+        if (d) Qualify.open(d, 'qualify');
+        map.closePopup();
+      });
+      const fi = el.querySelector('a[data-fiche-id]');
+      if (fi) fi.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const d = dataById.get(fi.dataset.ficheId);
+        if (d) Qualify.open(d, 'fiche');
         map.closePopup();
       });
     });
@@ -164,96 +171,124 @@ const MapView = (() => {
     });
   }
 
-  function popupHtml(d) {
-    const unit = CAP_UNITS[d.base] || 'GWh/an';
-    const rows = [
-      ['Type', d.type],
-      ['Capacité', `${fmtNum(d.capacite, 2)} ${unit}`],
-      ['Mise en service', fmtDate(d.dateMes)],
-      ['Réseau', [d.operateur, d.reseau].filter(Boolean).join(' · ')],
-    ];
-    if (d.base === 'cogen' && d.puissanceKw)
-      rows.splice(2, 0, ['Puissance', `${fmtNum(d.puissanceKw, 0)} kW`]);
-    if (d.base === 'cogen')
-      rows.splice(1, 0, ['Combustible', d.combustible || (d.codeCombustible ? `code ${d.codeCombustible}` : '—')]);
-    if (d.echeanceAnnee != null)
-      rows.push(['Échéance contrat (est.)',
-        d.echeanceTrancheLabel ? `${d.echeanceAnnee} · tranche ${d.echeanceTrancheLabel}` : String(d.echeanceAnnee)]);
-    if (d.score != null) {
-      const det = d.scoreDetail
-        ? Object.entries(d.scoreDetail).map(([k, v]) => `${CONFIG.SCORE_LABELS[k] || k} ${fmtNum(v, 0)}`).join(' · ')
-        : '';
-      rows.push(['Score v2', `${fmtNum(d.score, 0)} / 100 · priorité ${d.priorite}${det ? ' (' + det + ')' : ''}`]);
-    }
-    if (d.base === 'cogen') {
-      rows.push(['Réseau GRDF (est.)', d.distGrdf != null
-        ? `${fmtNum(d.distGrdf, 1)} km à vol d'oiseau`
-        : `> ${CONFIG.PARAMS.reseau.rayon_recherche_km} km ou zone ELD`]);
-      if (d.distInjection != null)
-        rows.push(['Injection la plus proche', `${fmtNum(d.distInjection, 1)} km · ${d.injectionProche || ''}`]);
-    }
-    if (d.icpe)
-      rows.push(['ICPE (Géorisques)', [d.icpe.lib_regime ? `régime ${d.icpe.lib_regime.toLowerCase()}` : null,
-        d.icpe.nom, d.icpe.maj ? `màj ${d.icpe.maj}` : null].filter(Boolean).join(' · ')]);
-    if (d.zonage)
-      rows.push(['Zonage de raccordement', [d.zonage.libelle, d.zonage.maturite,
-        d.zonage.capamax != null ? `capacité max ${fmtNum(d.zonage.capamax, 0)} Nm³/h` : null,
-        d.zonage.capaattent ? `en attente ${d.zonage.capaattent}` : null].filter(Boolean).join(' · ')]);
-    if (d.inPipeline)
-      rows.push(['Pipeline Nautilus', [d.pipeline.project, d.pipeline.status, d.pipeline.confidence].filter(Boolean).join(' · ')]);
-    if (d.evalStatus && d.evalStatus !== 'unknown')
-      rows.push(['Relation', CONFIG.EVAL_LABELS[d.evalStatus] || d.evalStatus]);
-    if (d.gridRating)
-      rows.push(['Difficulté raccordement (équipe)', CONFIG.GRID_LABELS[d.gridRating] || d.gridRating]);
-    if (d.pipeline && d.pipeline.tags && d.pipeline.tags.length)
-      rows.push(['Connaissance équipe', d.pipeline.tags.map(t => CONFIG.TAG_LABELS[t] || t).join(' · ')]);
-    if (d.pipeline && d.pipeline.capital) rows.push(['Capital', d.pipeline.capital]);
-    if (d.pipeline && d.pipeline.icpe) rows.push(['Régime ICPE', d.pipeline.icpe]);
-    if (d.pipeline && d.pipeline.intrants) rows.push(['Intrants', d.pipeline.intrants]);
-    if (d.cpb) {
-      const c = d.cpb;
-      const coefTxt = fmtNum(c.coef, 2);
-      rows.push(['Coefficient CPB (est.)', c.atteignable
-        ? `${coefTxt} en ${c.conv} · 0,95 atteignable ${c.first === c.last ? 'en ' + c.first : 'de ' + c.first + ' à ' + c.last}`
-        : `${coefTxt} en ${c.conv} (âge ${c.ageConv} ans) · 0,95 hors d'atteinte`]);
-    }
-
-    const hypNote = d.echeanceHyp
-      ? `<div class="legend-note">Hypothèse : ${escapeHtml(d.echeanceHyp)}</div>` : '';
-    const geoNote = d.geoPrecision === 'commune'
-      ? `<div class="legend-note">Position au centre de la commune</div>`
-      : d.geoPrecision === 'site (ICPE)'
-        ? `<div class="legend-note">Position de l'installation classée (Géorisques, ${escapeHtml(d.icpe && d.icpe.confiance || 'rapprochement par commune')})</div>` : '';
+  /* ---- Aides d'affichage ---- */
+  const PRIO_COLORS = { A: PALETTE.sage, B: PALETTE.teal, C: PALETTE.amber, D: PALETTE.grey };
+  function scoreBadge(d) {
+    if (d.score == null) return '';
+    const c = PRIO_COLORS[d.priorite] || PALETTE.grey;
+    const det = d.scoreDetail
+      ? Object.entries(d.scoreDetail).map(([k, v]) => `${CONFIG.SCORE_LABELS[k] || k} ${fmtNum(v, 0)}`).join(' · ') : '';
+    return `<span class="score-badge" style="background:${c}" title="${escapeHtml(det)}">${fmtNum(d.score, 0)} · ${escapeHtml(d.priorite)}</span>`;
+  }
+  function kmChip(km, max) {
+    if (km == null) return `<span class="chip chip-grey" title="au-delà de ${max} km du réseau GRDF, ou zone ELD">> ${max} km</span>`;
+    const cls = km <= 2 ? 'chip-green' : km <= 5 ? 'chip-amber' : 'chip-grey';
+    return `<span class="chip ${cls}" title="distance au tronçon GRDF en service le plus proche, à vol d'oiseau">${fmtNum(km, 1)} km</span>`;
+  }
+  function actionBar(d) {
     const gl = CONFIG.gmapsLinks(d);
-    const gmaps = [gl.primary, gl.secondary].filter(Boolean).map(l =>
-      `<a class="popup-link" href="${l.href}" title="${escapeHtml(l.title)}"
-           target="_blank" rel="noopener noreferrer">${escapeHtml(l.label)}</a>`).join('\n        ');
-    const radiusLink = (d.lat != null && d.lon != null)
-      ? `<a class="popup-link" href="#" data-radius-id="${escapeHtml(d.id)}"
-           title="Ne garder que les sites autour de celui-ci">⌖ 50 km autour</a>` : '';
-    const icpeLink = d.icpe && d.icpe.url
-      ? `<a class="popup-link" href="${escapeHtml(d.icpe.url)}" target="_blank" rel="noopener noreferrer"
-           title="Fiche de l'installation classée sur Géorisques">Fiche ICPE ↗</a>` : '';
-    const qualifyLink = `<a class="popup-link" href="#" data-qualify-id="${escapeHtml(d.id)}"
-           title="Ouvrir le panneau de qualification et inscrire ce site au registre équipe">✎ Qualifier</a>`;
-    const plNote = d.pipeline && d.pipeline.notes
-      ? Object.entries(d.pipeline.notes).map(([k, v]) => `<div class="legend-note"><b>${escapeHtml(k)}</b> : ${escapeHtml(v)}</div>`).join('')
-      : '';
-
+    const a = [];
+    a.push(`<a class="act" href="#" data-fiche-id="${escapeHtml(d.id)}" title="Fiche complète du site (réseau, ICPE, zonage, registre équipe)"><span class="act-ico">☰</span>Fiche</a>`);
+    a.push(`<a class="act" href="#" data-qualify-id="${escapeHtml(d.id)}" title="Inscrire ce site au registre équipe"><span class="act-ico">✎</span>Qualifier</a>`);
+    if (d.lat != null && d.lon != null)
+      a.push(`<a class="act" href="#" data-radius-id="${escapeHtml(d.id)}" title="Ne garder que les sites à 50 km"><span class="act-ico">⌖</span>Rayon</a>`);
+    if (gl.primary)
+      a.push(`<a class="act" href="${gl.primary.href}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(gl.primary.title)}"><span class="act-ico">◎</span>Maps</a>`);
+    if (d.icpe && d.icpe.url)
+      a.push(`<a class="act" href="${escapeHtml(d.icpe.url)}" target="_blank" rel="noopener noreferrer" title="Fiche de l'installation classée (Géorisques)"><span class="act-ico">⚙</span>ICPE</a>`);
+    return `<div class="popup-actions">${a.join('')}</div>`;
+  }
+  function titleHtml(d) {
     return `
-      <div class="popup-title">${escapeHtml(d.nom)}</div>
-      <div class="popup-sub">${escapeHtml([d.commune, d.departement].filter(Boolean).join(' · '))}</div>
-      <dl class="popup-grid">
-        ${rows.map(([k, v]) => `<dt>${k}</dt><dd>${escapeHtml(String(v || '—'))}</dd>`).join('')}
+      <div class="popup-title"><span class="status-dot ${d.ouvert ? 'open' : 'closed'}" title="${d.ouvert ? 'En service' : 'Fermé'}"></span>${escapeHtml(d.nom)}${d.inPipeline ? ' <span class="chip chip-amber" title="Pipeline Nautilus">pipeline</span>' : ''}</div>
+      <div class="popup-sub">${escapeHtml([d.commune, d.departement].filter(Boolean).join(' · '))}</div>`;
+  }
+
+  /* ---- Popup : résumé en six lignes + barre d'actions ---- */
+  function popupHtml(d) {
+    const unit = CAP_UNITS[d.base] || '';
+    const isE = d.base === 'cogen';
+    const rows = [];
+    rows.push(['Type', isE && d.puissanceKw
+      ? `${escapeHtml(d.type)} · ${fmtNum(d.puissanceKw, 0)} kWé`
+      : `${escapeHtml(d.type)} · ${fmtNum(d.capacite, 1)} ${unit}`]);
+    if (d.score != null) rows.push(['Score v2', scoreBadge(d)]);
+    if (isE) rows.push(['Réseau GRDF', kmChip(d.distGrdf, CONFIG.PARAMS.reseau.rayon_recherche_km)]);
+    if (d.echeanceAnnee != null)
+      rows.push(['Échéance (est.)', `${d.echeanceAnnee}${d.echeanceTrancheLabel ? ` <span class="chip chip-grey">${escapeHtml(d.echeanceTrancheLabel)}</span>` : ''}`]);
+    if (d.cpb) rows.push(['Coef. CPB (est.)', `${fmtNum(d.cpb.coef, 2)} en ${d.cpb.conv}${d.cpb.atteignable ? ` <span class="chip chip-green" title="0,95 atteignable de ${d.cpb.first} à ${d.cpb.last}">0,95 ${d.cpb.first}-${d.cpb.last}</span>` : ''}`]);
+    rows.push(['Mise en service', `${fmtDate(d.dateMes)}${d.geoPrecision === 'commune' ? ' <span class="chip chip-grey" title="position au centre de la commune">≈ commune</span>' : ''}`]);
+    return `
+      ${titleHtml(d)}
+      <dl class="popup-grid popup-grid-left">
+        ${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}
       </dl>
-      <div class="popup-foot">
-        <span class="status-tag ${d.ouvert ? 'open' : 'closed'}">${d.ouvert ? 'Ouvert' : 'Fermé'}</span>
-        ${qualifyLink}
-        ${radiusLink}
-        ${gmaps}
-        ${icpeLink}
-      </div>
-      ${hypNote}${geoNote}${plNote}`;
+      ${actionBar(d)}`;
+  }
+
+  /* ---- Fiche complète (panneau latéral) : quatre sections ---- */
+  function section(title, rows, open = true) {
+    const body = rows.filter(r => r && r[1] != null && r[1] !== '' && r[1] !== '—');
+    if (!body.length) return '';
+    return `<details class="fiche-sec"${open ? ' open' : ''}><summary>${title}</summary>
+      <dl class="popup-grid popup-grid-left">${body.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl></details>`;
+  }
+  function detailHtml(d) {
+    const unit = CAP_UNITS[d.base] || '';
+    const isE = d.base === 'cogen';
+    const e = (v) => escapeHtml(String(v == null ? '' : v));
+    const identite = [
+      ['Clé registre', e(d.id.replace(/^(cog|inj)-/, ''))],
+      ['Type', e(d.type)],
+      isE ? ['Puissance', d.puissanceKw ? `${fmtNum(d.puissanceKw, 0)} kWé` : ''] : null,
+      ['Capacité', `${fmtNum(d.capacite, 2)} ${unit}`],
+      isE ? ['Combustible', e(d.combustible || (d.codeCombustible ? `code ${d.codeCombustible}` : ''))] : null,
+      ['Technologie / réseau', e([d.operateur, d.reseau].filter(Boolean).join(' · '))],
+      ['Mise en service', fmtDate(d.dateMes)],
+      ['Statut', d.ouvert ? 'En service' : 'Fermé'],
+      ['Position', e(d.geoPrecision === 'commune' ? 'centre de la commune (approximative)'
+        : d.geoPrecision === 'site (ICPE)' ? `installation classée (Géorisques, ${d.icpe && d.icpe.confiance || 'commune'})` : 'coordonnées du registre')],
+    ];
+    const economie = [
+      ['Score v2', d.score != null ? scoreBadge(d) : ''],
+      ['Détail du score', d.scoreDetail ? e(Object.entries(d.scoreDetail).map(([k, v]) => `${CONFIG.SCORE_LABELS[k] || k} ${v}`).join(' · ')) : ''],
+      ['Échéance contrat (est.)', d.echeanceAnnee != null ? `${d.echeanceAnnee}${d.echeanceTrancheLabel ? ' · tranche ' + e(d.echeanceTrancheLabel) : ''}` : ''],
+      ['Hypothèse de durée', e(d.echeanceHyp || '')],
+      ['Coefficient CPB (est.)', d.cpb ? (d.cpb.atteignable
+        ? `${fmtNum(d.cpb.coef, 2)} en ${d.cpb.conv} · 0,95 atteignable ${d.cpb.first === d.cpb.last ? 'en ' + d.cpb.first : 'de ' + d.cpb.first + ' à ' + d.cpb.last}`
+        : `${fmtNum(d.cpb.coef, 2)} en ${d.cpb.conv} (âge ${d.cpb.ageConv} ans) · 0,95 hors d'atteinte`) : ''],
+    ];
+    const reseau = isE ? [
+      ['Réseau GRDF (est.)', d.distGrdf != null ? `${kmChip(d.distGrdf, CONFIG.PARAMS.reseau.rayon_recherche_km)} à vol d'oiseau` : `> ${CONFIG.PARAMS.reseau.rayon_recherche_km} km ou zone ELD`],
+      ['Injection la plus proche', d.distInjection != null ? `${fmtNum(d.distInjection, 1)} km · ${e(d.injectionProche)}` : ''],
+      ['Zonage de raccordement', d.zonage ? e([d.zonage.libelle, d.zonage.maturite,
+        d.zonage.capamax != null ? `capacité max ${fmtNum(d.zonage.capamax, 0)} Nm³/h` : null,
+        d.zonage.capaattent ? `en attente ${d.zonage.capaattent}` : null].filter(Boolean).join(' · ')) : ''],
+      ['ICPE (Géorisques)', d.icpe ? e([d.icpe.lib_regime ? `régime ${d.icpe.lib_regime.toLowerCase()}` : null, d.icpe.nom,
+        d.icpe.adresse, d.icpe.maj ? `màj ${d.icpe.maj}` : null].filter(Boolean).join(' · ')) : ''],
+    ] : [
+      ['Zonage de raccordement', d.zonage ? e([d.zonage.libelle, d.zonage.maturite].filter(Boolean).join(' · ')) : ''],
+    ];
+    const pl = d.pipeline || {};
+    const equipe = [
+      ['Projet', e(pl.project || '')],
+      ['Relation', d.evalStatus && d.evalStatus !== 'unknown' ? e(CONFIG.EVAL_LABELS[d.evalStatus] || d.evalStatus) : ''],
+      ['Difficulté raccordement (équipe)', d.gridRating ? e(CONFIG.GRID_LABELS[d.gridRating] || d.gridRating) : ''],
+      ['Connaissance équipe', pl.tags && pl.tags.length ? e(pl.tags.map(t => CONFIG.TAG_LABELS[t] || t).join(' · ')) : ''],
+      ['Capital', e(pl.capital || '')], ['Régime ICPE (équipe)', e(pl.icpe || '')], ['Intrants', e(pl.intrants || '')],
+      ...(pl.notes ? Object.entries(pl.notes).map(([k, v]) => [e(k), e(v)]) : []),
+    ];
+    const gl = CONFIG.gmapsLinks(d);
+    const liens = [gl.primary, gl.secondary].filter(Boolean).map(l =>
+      `<a class="popup-link" href="${l.href}" title="${escapeHtml(l.title)}" target="_blank" rel="noopener noreferrer">${escapeHtml(l.label)}</a>`);
+    if (d.icpe && d.icpe.url) liens.push(`<a class="popup-link" href="${escapeHtml(d.icpe.url)}" target="_blank" rel="noopener noreferrer">Fiche ICPE ↗</a>`);
+    return `
+      ${titleHtml(d)}
+      ${section('Identité', identite)}
+      ${section('Économie', economie)}
+      ${section('Réseau', reseau)}
+      ${section('Équipe', equipe, !!(pl.project || pl.status || pl.tags))}
+      <div class="fiche-links">${liens.join('')}</div>`;
   }
 
   function update(data) {
@@ -270,7 +305,7 @@ const MapView = (() => {
         title: d.nom,
         alt: d.nom,
       });
-      marker.bindPopup(popupHtml(d), { maxWidth: 300 });
+      marker.bindPopup(popupHtml(d), { maxWidth: 340, minWidth: 260 });
       layer.push(marker);
       markers.set(d.id, marker);
     });
@@ -354,5 +389,5 @@ const MapView = (() => {
   }
 
   // popupHtml exposé : réutilisé pour la fiche site (one-pager) et les tests
-  return { init, update, focusOn, invalidateSize, fitFrance, showRadius, hideRadius, popupHtml };
+  return { init, update, focusOn, invalidateSize, fitFrance, showRadius, hideRadius, popupHtml, detailHtml };
 })();
