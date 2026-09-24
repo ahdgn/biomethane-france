@@ -180,6 +180,17 @@ const MapView = (() => {
       ? Object.entries(d.scoreDetail).map(([k, v]) => `${CONFIG.SCORE_LABELS[k] || k} ${fmtNum(v, 0)}`).join(' · ') : '';
     return `<span class="score-badge" style="background:${c}" title="${escapeHtml(det)}">${fmtNum(d.score, 0)} · ${escapeHtml(d.priorite)}</span>`;
   }
+  /* Barre du score : un segment par critère, longueur = poids, remplissage = points obtenus */
+  function scoreBar(d) {
+    if (!d.scoreDetail) return '';
+    const w = CONFIG.PARAMS.score_v2[d.base === 'cogen' ? 'elec' : 'injection'] || {};
+    const segs = Object.entries(d.scoreDetail).map(([k, v]) => {
+      const max = w[k] || 0, pct = max ? Math.round(100 * v / max) : 0;
+      return `<span class="sbar-seg" style="flex:${max || 1}" title="${escapeHtml((CONFIG.SCORE_LABELS[k] || k) + ' : ' + fmtNum(v, 0) + ' / ' + max)}"><span class="sbar-fill" style="width:${pct}%"></span></span>`;
+    }).join('');
+    return `<span class="sbar">${segs}</span>`;
+  }
+  const info = (txt) => txt ? ` <span class="info-ico" title="${escapeHtml(txt)}">ⓘ</span>` : '';
   function kmChip(km, max) {
     if (km == null) return `<span class="chip chip-grey" title="au-delà de ${max} km du réseau GRDF, ou zone ELD">> ${max} km</span>`;
     const cls = km <= 2 ? 'chip-green' : km <= 5 ? 'chip-amber' : 'chip-grey';
@@ -250,16 +261,15 @@ const MapView = (() => {
         : d.geoPrecision === 'site (ICPE)' ? `installation classée (Géorisques, ${d.icpe && d.icpe.confiance || 'commune'})` : 'coordonnées du registre')],
     ];
     const economie = [
-      ['Score v2', d.score != null ? scoreBadge(d) : ''],
-      ['Détail du score', d.scoreDetail ? e(Object.entries(d.scoreDetail).map(([k, v]) => `${CONFIG.SCORE_LABELS[k] || k} ${v}`).join(' · ')) : ''],
-      ['Échéance contrat (est.)', d.echeanceAnnee != null ? `${d.echeanceAnnee}${d.echeanceTrancheLabel ? ' · tranche ' + e(d.echeanceTrancheLabel) : ''}` : ''],
-      ['Hypothèse de durée', e(d.echeanceHyp || '')],
+      ['Score v2', d.score != null ? `${scoreBadge(d)} ${scoreBar(d)}` : ''],
+      ['Échéance contrat (est.)', d.echeanceAnnee != null
+        ? `${d.echeanceAnnee}${d.echeanceTrancheLabel ? ` <span class="chip chip-grey">${e(d.echeanceTrancheLabel)}</span>` : ''}${info(d.echeanceHyp)}` : ''],
       ['Coefficient CPB (est.)', d.cpb ? (d.cpb.atteignable
-        ? `${fmtNum(d.cpb.coef, 2)} en ${d.cpb.conv} · 0,95 atteignable ${d.cpb.first === d.cpb.last ? 'en ' + d.cpb.first : 'de ' + d.cpb.first + ' à ' + d.cpb.last}`
-        : `${fmtNum(d.cpb.coef, 2)} en ${d.cpb.conv} (âge ${d.cpb.ageConv} ans) · 0,95 hors d'atteinte`) : ''],
+        ? `${fmtNum(d.cpb.coef, 2)} en ${d.cpb.conv} <span class="chip chip-green">0,95 ${d.cpb.first === d.cpb.last ? d.cpb.first : d.cpb.first + '-' + d.cpb.last}</span>${info('Arrêté du 26/12/2025 : 0,95 CPB/MWh si conversion entre 15 et 30 ans d’âge et première injection avant le 31/12/2029 ; 1 avant 15 ans ; 0,8 sinon. Calcul à l’année de conversion par défaut ' + d.cpb.conv + '.')}`
+        : `${fmtNum(d.cpb.coef, 2)} en ${d.cpb.conv} <span class="chip chip-grey">0,95 hors d'atteinte</span>${info('Âge ' + d.cpb.ageConv + ' ans en ' + d.cpb.conv + '. Arrêté du 26/12/2025 : 0,95 entre 15 et 30 ans avec injection avant fin 2029.')}`) : ''],
     ];
     const reseau = isE ? [
-      ['Réseau GRDF (est.)', d.distGrdf != null ? `${kmChip(d.distGrdf, CONFIG.PARAMS.reseau.rayon_recherche_km)} à vol d'oiseau` : `> ${CONFIG.PARAMS.reseau.rayon_recherche_km} km ou zone ELD`],
+      ['Réseau GRDF (est.)', `${kmChip(d.distGrdf, CONFIG.PARAMS.reseau.rayon_recherche_km)}${info('Distance à vol d’oiseau au tronçon GRDF en service le plus proche (open data GRDF, propane exclu, rayon 15 km). Tri, pas chiffrage : l’étude détaillée GRDF fait foi.' + (d.geoPrecision === 'commune' ? ' Mesurée depuis le centre de la commune.' : ''))}`],
       ['Injection la plus proche', d.distInjection != null ? `${fmtNum(d.distInjection, 1)} km · ${e(d.injectionProche)}` : ''],
       ['Zonage de raccordement', d.zonage ? e([d.zonage.libelle, d.zonage.maturite,
         d.zonage.capamax != null ? `capacité max ${fmtNum(d.zonage.capamax, 0)} Nm³/h` : null,
@@ -282,12 +292,14 @@ const MapView = (() => {
     const liens = [gl.primary, gl.secondary].filter(Boolean).map(l =>
       `<a class="popup-link" href="${l.href}" title="${escapeHtml(l.title)}" target="_blank" rel="noopener noreferrer">${escapeHtml(l.label)}</a>`);
     if (d.icpe && d.icpe.url) liens.push(`<a class="popup-link" href="${escapeHtml(d.icpe.url)}" target="_blank" rel="noopener noreferrer">Fiche ICPE ↗</a>`);
+    const equipeHtml = section('Équipe', equipe, true)
+      || `<details class="fiche-sec"><summary>Équipe</summary><p class="fiche-empty">Aucune fiche au registre. <a href="#" class="popup-link" data-qualify-id="${escapeHtml(d.id)}">Qualifier ce site</a></p></details>`;
     return `
       ${titleHtml(d)}
       ${section('Identité', identite)}
       ${section('Économie', economie)}
       ${section('Réseau', reseau)}
-      ${section('Équipe', equipe, !!(pl.project || pl.status || pl.tags))}
+      ${equipeHtml}
       <div class="fiche-links">${liens.join('')}</div>`;
   }
 

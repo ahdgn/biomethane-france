@@ -50,6 +50,8 @@ const Qualify = (() => {
     document.getElementById('qualify-title').textContent = mode === 'qualify' ? 'Qualifier ce site' : 'Fiche site';
     drawer.classList.toggle('mode-qualify', mode === 'qualify');
     document.getElementById('qualify-site').innerHTML = MapView.detailHtml(d);
+    const qa = document.querySelector('#qualify-site a[data-qualify-id]');
+    if (qa) qa.addEventListener('click', (ev) => { ev.preventDefault(); open(d, 'qualify'); });
     const note = document.getElementById('qualify-noform');
     if (REGISTER_FORM_URL) {
       note.hidden = true;

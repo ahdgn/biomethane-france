@@ -681,6 +681,21 @@ body.qualify-open .bottom-panel { display: none; }
 .fiche-sec .popup-grid-left { grid-template-columns: 130px 1fr; margin-top: 4px; }
 .fiche-links { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 4px; font-size: 12px; }
 .qualify-site { max-height: 60%; }
+/* Barre du score (un segment par critère) et infobulles */
+.sbar { display: inline-flex; gap: 2px; width: 120px; height: 7px; vertical-align: 2px; margin-left: 6px; }
+.sbar-seg { display: block; height: 100%; background: rgba(127,127,127,0.18); border-radius: 2px; overflow: hidden; }
+.sbar-fill { display: block; height: 100%; background: var(--teal); }
+.info-ico { color: var(--muted); cursor: help; font-size: 12px; margin-left: 3px; }
+.fiche-empty { margin: 4px 0 2px; color: var(--muted); font-size: 12px; }
+/* Mobile : popup en feuille basse, pleine largeur */
+@media (max-width: 860px) {
+  .leaflet-popup { position: fixed !important; left: 0 !important; right: 0 !important; bottom: 0 !important; top: auto !important;
+    transform: none !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+  .leaflet-popup-content-wrapper { border-radius: 14px 14px 0 0 !important; box-shadow: 0 -4px 18px rgba(30,66,96,0.25) !important; }
+  .leaflet-popup-content { width: auto !important; max-height: 62vh; overflow-y: auto; margin: 12px 16px 14px; }
+  .leaflet-popup-tip-container { display: none !important; }
+  .leaflet-popup-close-button { top: 8px !important; right: 10px !important; }
+}
 .qualify-drawer.mode-qualify .qualify-site { max-height: 32%; }
 .popup-link { color: var(--teal); font-weight: 500; text-decoration: none; }
 .popup-link:hover { text-decoration: underline; }
