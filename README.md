@@ -28,6 +28,7 @@ puis ouvrir <http://localhost:8000>.
 | `data/` | Jeux de données JSON et `meta.json` (millésimes, écrits par l'ETL) |
 | `tools/screening_params.json` | Seuils du screening (puissance, tranches, CPB, zone test) : la config, jamais le code |
 | `tools/build_datasets.py` | ETL : registres ODRÉ → `data/*.json` + `meta.json` (injection telle quelle ; électricité biogaz filtrée sur la filière Bioénergies, géocodée au centroïde de commune par code INSEE) |
+| `tools/enrich_grid.py` | Enrichissement réseau : distance au tronçon GRDF en service le plus proche (open data GRDF), point d'injection le plus proche, zonage de raccordement (ODRÉ) ; cache dans `tools/cache/` |
 | `tools/check_geo.py` | Contrôle géométrique : chaque site testé contre les contours des régions (`tools/geo/regions.geo.json`) ; `--apply` corrige la région ou retire des coordonnées hors de France |
 
 ## Mettre à jour les données
@@ -35,6 +36,7 @@ puis ouvrir <http://localhost:8000>.
 ```bash
 python tools/build_datasets.py
 python tools/check_geo.py --apply
+python tools/enrich_grid.py        # ~20 min la première fois (1 225 requêtes GRDF), cache ensuite
 ```
 
 Puis commit des fichiers `data/` sur une branche et PR (chiffres avant/après
@@ -71,6 +73,10 @@ pas un critère : l'ancien radar (juin 2026) filtré sur « Cogénération »
   installations sans date de MES. À confirmer en entretien.
 - **Coefficient CPB** : estimation à l'année de conversion par défaut (arrêté
   du 26/12/2025), voir `METHODOLOGIE.md`.
+- **Distance au réseau GRDF** : à vol d'oiseau depuis le centroïde de commune,
+  réseau GRDF en service seulement (zones ELD « inconnues »), rayon 15 km ;
+  critère de tri, pas un chiffrage de raccordement. Zonages de raccordement :
+  édition ODRÉ de décembre 2020.
 - **Filtre prospection v2** : périmètre thèse de la reprise du 18/09/2026 (détail
   dans l'app via le bouton ⓘ), seuils lus dans `tools/screening_params.json`.
 - **Outre-mer** : 24 installations (Guadeloupe, Guyane…) écartées par l'ETL,

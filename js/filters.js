@@ -22,6 +22,7 @@ const Filters = (() => {
     zone: false,        // zone test (Hauts-de-France, Grand Est, Normandie)
     power: '',          // '' | '250' | '500' | '1000' : puissance cogé minimale (kWé)
     radius: null,       // null | { lat, lon, km, label } : recherche par rayon
+    grid: '',           // '' | '2' | '5' | '10' | 'far' : distance au réseau GRDF (élec. biogaz)
   };
   const RADIUS_MIN = 5, RADIUS_MAX = 150;
   const POWER_VALUES = ['250', '500', '1000'];
@@ -64,8 +65,20 @@ const Filters = (() => {
   function windowKeys() {
     return CONFIG.PARAMS.cogen.echeance_tranches.map(t => t.key);
   }
+  function gridKeys() {
+    return [...CONFIG.PARAMS.reseau.distance_paliers_km.map(String), 'far'];
+  }
 
   function populateOptions() {
+    // Paliers de distance au réseau GRDF (depuis screening_params.json)
+    const paliers = CONFIG.PARAMS.reseau.distance_paliers_km;
+    const grid = document.getElementById('filter-grid');
+    grid.innerHTML = [
+      { key: '', label: 'Toutes' },
+      ...paliers.map(k => ({ key: String(k), label: `≤ ${k} km` })),
+      { key: 'far', label: `> ${paliers[paliers.length - 1]} km / inconnue` },
+    ].map(t => `<button class="seg-btn" data-grid="${t.key}" aria-pressed="${t.key === state.grid}">${escapeHtml(t.label)}</button>`).join('');
+
     // Tranches d'échéance (depuis screening_params.json)
     const win = document.getElementById('filter-window');
     win.innerHTML = [{ key: '', label: 'Toutes' }, ...CONFIG.PARAMS.cogen.echeance_tranches]
@@ -140,6 +153,7 @@ const Filters = (() => {
       if (windowKeys().includes(w)) state.window = w;
     }
     if (p.has('c') && ['095', '08'].includes(p.get('c'))) state.cpb = p.get('c');
+    if (p.has('g') && gridKeys().includes(p.get('g'))) state.grid = p.get('g');
     if (p.get('p') === '1' || p.get('p') === '2') state.prospection = true; // p=1 : anciens liens
     if (p.get('z') === '1') state.zone = true;
     if (p.has('k') && POWER_VALUES.includes(p.get('k'))) state.power = p.get('k');
@@ -169,6 +183,7 @@ const Filters = (() => {
     if (state.status) p.set('s', state.status);
     if (state.window) p.set('w', state.window);
     if (state.cpb) p.set('c', state.cpb);
+    if (state.grid) p.set('g', state.grid);
     if (state.prospection) p.set('p', '2');
     if (state.zone) p.set('z', '1');
     if (state.power) p.set('k', state.power);
@@ -280,7 +295,15 @@ const Filters = (() => {
       syncSegmented('filter-window', 'window', state.window);
       applyFilters();
     });
-    // Coefficient CPB (cogé biogaz)
+    // Distance au réseau GRDF (élec. biogaz)
+    document.getElementById('filter-grid').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-grid]');
+      if (!btn) return;
+      state.grid = btn.dataset.grid;
+      syncSegmented('filter-grid', 'grid', state.grid);
+      applyFilters();
+    });
+    // Coefficient CPB (méthanisation)
     document.getElementById('filter-cpb').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-cpb]');
       if (!btn) return;
@@ -354,6 +377,7 @@ const Filters = (() => {
     syncSegmented('filter-status', 'status', state.status);
     syncSegmented('filter-window', 'window', state.window);
     syncSegmented('filter-cpb', 'cpb', state.cpb);
+    syncSegmented('filter-grid', 'grid', state.grid);
     document.getElementById('filter-prospection').checked = state.prospection;
     document.getElementById('filter-zone').checked = state.zone;
     syncSegmented('filter-power', 'power', state.power);
@@ -370,6 +394,7 @@ const Filters = (() => {
     if (state.status) n++;
     if (state.window) n++;
     if (state.cpb) n++;
+    if (state.grid) n++;
     if (state.prospection) n++;
     if (state.zone) n++;
     if (state.power) n++;
@@ -405,6 +430,12 @@ const Filters = (() => {
       if (d.annee != null && (d.annee < yearMin || d.annee > state.yearMax)) return false;
       if (state.operator && d.operateur !== state.operator) return false;
       if (state.window && d.echeanceTranche !== state.window) return false; // pas d'estimation -> hors fenêtre
+      // distance au réseau GRDF : ne concerne que l'électricité biogaz (l'injection passe)
+      if (state.grid && d.base === 'cogen') {
+        const km = d.distGrdf;
+        if (state.grid === 'far') { if (km != null && km <= Math.max(...CONFIG.PARAMS.reseau.distance_paliers_km)) return false; }
+        else if (km == null || km > Number(state.grid)) return false;
+      }
       // coefficient CPB : ne concerne que les cogés biogaz (l'injection passe)
       if (state.cpb && d.base === 'cogen') {
         if (!d.cpb) return false; // thermique ou sans année de MES
@@ -471,6 +502,7 @@ const Filters = (() => {
     state.status = '';
     state.window = '';
     state.cpb = '';
+    state.grid = '';
     state.prospection = false;
     state.zone = false;
     state.power = '';

@@ -10,7 +10,7 @@
   <!-- Librairies vendorisées (pas de CDN, pas de fonte externe) -->
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
-  <link rel="stylesheet" href="css/style.css?v=20260924-4">
+  <link rel="stylesheet" href="css/style.css?v=20260924-5">
 </head>
 <body>
 
@@ -146,6 +146,13 @@
         <span class="filter-hint">Tranches BC 14/09/2026. Estimation : injection 15 ans · élec. biogaz 20 ans (contrats BG) ; sites sans date de MES exclus quand une tranche est choisie.</span>
       </div>
 
+      <!-- Distance au réseau GRDF (électricité biogaz) -->
+      <div class="filter-group">
+        <span class="filter-label" id="label-grid">Réseau GRDF (distance)</span>
+        <div class="segmented" id="filter-grid" role="group" aria-labelledby="label-grid"></div>
+        <span class="filter-hint">Distance à vol d'oiseau entre le centroïde de la commune et le tronçon GRDF en service le plus proche (open data GRDF, propane exclu ; rayon 15 km). Proxy de tri, pas un chiffrage : cible 4 km, maximum 5 km (BC, AdlF, GRDF). « Inconnue » = au-delà de 15 km ou zone ELD. Sans effet sur les points d'injection.</span>
+      </div>
+
       <!-- Coefficient CPB (méthanisation) -->
       <div class="filter-group">
         <span class="filter-label" id="label-cpb">Coefficient CPB (méthanisation)</span>
@@ -271,6 +278,8 @@
                   <th scope="col" data-sort="dateMes">Mise en service</th>
                   <th scope="col" data-sort="echeanceAnnee" class="col-num"
                       title="Échéance de contrat estimée — injection 15 ans · élec. biogaz 20 ans (contrats BG)">Échéance (est.)</th>
+                  <th scope="col" data-sort="distGrdf" class="col-num"
+                      title="Distance au réseau GRDF en service (km, à vol d'oiseau depuis le centroïde de commune) — élec. biogaz">Réseau (km)</th>
                   <th scope="col" data-sort="cpbCoef" class="col-num"
                       title="Coefficient CPB estimé à l'année de conversion par défaut (méthanisation) — arrêté du 26/12/2025">Coef. CPB</th>
                   <th scope="col" data-sort="ouvert">Statut</th>
@@ -301,11 +310,11 @@
   <script src="vendor/chartjs/chart.umd.min.js"></script>
 
   <!-- App -->
-  <script src="js/config.js?v=20260924-4"></script>
-  <script src="js/filters.js?v=20260924-4"></script>
-  <script src="js/map.js?v=20260924-4"></script>
-  <script src="js/charts.js?v=20260924-4"></script>
-  <script src="js/table.js?v=20260924-4"></script>
-  <script src="js/app.js?v=20260924-4"></script>
+  <script src="js/config.js?v=20260924-5"></script>
+  <script src="js/filters.js?v=20260924-5"></script>
+  <script src="js/map.js?v=20260924-5"></script>
+  <script src="js/charts.js?v=20260924-5"></script>
+  <script src="js/table.js?v=20260924-5"></script>
+  <script src="js/app.js?v=20260924-5"></script>
 </body>
 </html>
