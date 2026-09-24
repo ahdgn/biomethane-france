@@ -68,6 +68,14 @@ clé, la base, le nom et la commune. Pour le brancher (une fois) :
 4. Le coller dans `REGISTER_FORM_URL` de `js/config.js`, incrémenter le
    `?v=` de `index.html`, PR.
 
+Lien branché le 24/09/2026 :
+`https://airtable.com/app2bwaGaaTnIBUVq/pagMrWulp0TcVqzD5/form` (formulaire
+d'interface, embarqué via `/embed/`, pré-rempli et testé en local). Ce type de
+formulaire demande une connexion Airtable tant qu'il n'est pas partagé
+publiquement : pour que l'équipe (AdlF, JT) qualifie sans compte, activer le
+partage public du formulaire (« Partager » → accès par lien) ou créer une vue
+Formulaire classique (lien `shr…`) et remplacer `REGISTER_FORM_URL`.
+
 Tant que le lien est vide, le panneau affiche l'identité du site et explique
 que le formulaire n'est pas branché. Chaque envoi crée une nouvelle fiche ; si
 plusieurs fiches partagent une clé, la synchronisation garde la plus récente.
