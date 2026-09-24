@@ -147,7 +147,7 @@ const CONFIG = (() => {
   /* Lien partagé du formulaire Airtable « Qualifier un site » (voir REGISTER.md).
      Vide = le panneau montre l'identité du site et explique que le formulaire
      n'est pas encore branché. */
-  const REGISTER_FORM_URL = '';
+  const REGISTER_FORM_URL = 'https://airtable.com/app2bwaGaaTnIBUVq/pagMrWulp0TcVqzD5/form';
 
   // Libellés des critères du score v2 (clés de screening_params.json)
   const SCORE_LABELS = {
@@ -185,6 +185,34 @@ const CONFIG = (() => {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
   const typeColor = (type) => TYPE_COLORS[type] || TYPE_FALLBACK;
+
+  /* ---- Liens Google Maps ----
+     Les installations électriques sont géocodées au centroïde de commune :
+     un lien par coordonnées tombe au milieu du bourg. Google Maps connaît en
+     revanche la plupart des méthaniseurs comme lieux nommés : une recherche
+     « nom du site + commune » aboutit sur l'installation, en vue satellite
+     (constat AG, 24/09/2026). Pour un nom masqué (« Confidentiel »), repli
+     sur « méthanisation + commune ». Les points d'injection ont des
+     coordonnées de site : le lien par coordonnées reste le principal.
+     Retourne { primary: {href, label, title}, secondary: {…} | null }. */
+  const MASKED_NAMES = ['confidentiel', '-', ''];
+  function gmapsLinks(d) {
+    const coords = (d.lat != null && d.lon != null)
+      ? { href: `https://www.google.com/maps?q=${d.lat},${d.lon}`, label: 'Google Maps (coordonnées) ↗',
+          title: d.geoPrecision === 'commune' ? 'Centre de la commune, pas le site' : 'Coordonnées du site' }
+      : null;
+    if (d.base !== 'cogen') return { primary: coords, secondary: null };
+    const masked = MASKED_NAMES.includes(String(d.nom || '').trim().toLowerCase());
+    const query = masked
+      ? `méthanisation ${d.commune || ''} ${d.departement || ''}`
+      : `${d.nom} ${d.commune || ''}`;
+    const search = {
+      href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query.trim())}`,
+      label: masked ? 'Google Maps (méthanisation + commune) ↗' : 'Google Maps (site) ↗',
+      title: masked ? `Recherche « ${query.trim()} » : nom masqué au registre, à confirmer` : `Recherche « ${query.trim()} »`,
+    };
+    return { primary: search, secondary: coords };
+  }
 
   /* ---- Échéance de contrat estimée ----
      Durées vérifiées (Run 1, 27/07/2026) :
@@ -328,6 +356,6 @@ const CONFIG = (() => {
   return { PALETTE, TYPE_COLORS, TYPE_FALLBACK, DATASETS, CAP_UNITS, SOURCE_NOTE, SCORE_LABELS,
            EVAL_LABELS, TAG_LABELS, GRID_LABELS, REGISTER_FORM_URL,
            YEAR_FLOOR, YEAR_FLOOR_LABEL, PARAMS, setParams,
-           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, echeance, echeanceTranche, cpbInfo,
+           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, gmapsLinks, echeance, echeanceTranche, cpbInfo,
            prospection2, zoneTest };
 })();
