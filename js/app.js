@@ -15,6 +15,15 @@
   document.body.appendChild(overlay);
 
   try {
+    /* ---- Paramètres de screening (seuils hors code) ---- */
+    try {
+      const pr = await fetch('tools/screening_params.json');
+      if (pr.ok) CONFIG.setParams(await pr.json());
+      else console.warn('screening_params.json : HTTP ' + pr.status + ' — valeurs de secours');
+    } catch (e) {
+      console.warn('screening_params.json inaccessible — valeurs de secours', e);
+    }
+
     /* ---- Chargement des jeux de données ---- */
     const results = await Promise.all(DATASETS.map(async (ds) => {
       try {

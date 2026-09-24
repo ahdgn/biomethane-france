@@ -52,8 +52,11 @@ scoring du radar sont ignorées.
   MES alors que l'éligibilité dépendait de la date du CODOA. Avenants et
   renégociations non captés ; 70 cogés sans date MES. À confirmer en entretien.
   Voir issue #5.
-- **Filtre prospection 1** : périmètre thèse figé au CR weekly du 12/06/2026
-  (détail dans l'app via le bouton ⓘ) ; il évoluera avec la méthodologie.
+- **Filtre prospection v2** : périmètre thèse de la reprise du 18/09/2026 (détail
+  dans l'app via le bouton ⓘ), seuils lus dans `tools/screening_params.json`.
+  Le plafond 25 GWh de la v1 est abandonné (guichet ouvert réservé aux < 13 GWh
+  puis abrogé) ; les cogés sont filtrées sur la puissance (≥ 250 kWé) et non
+  plus sur l'énergie.
 - **Millésime** : registre ODRÉ au 01/01/2025 ; radar cogé extrait mi-2026.
   Pas de mise à jour automatique à ce stade.
 

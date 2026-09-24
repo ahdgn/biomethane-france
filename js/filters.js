@@ -4,7 +4,7 @@
    ============================================ */
 
 const Filters = (() => {
-  const { fmtInt, fmtNum, escapeHtml, typeColor, DATASETS, CAP_UNITS, prospection1,
+  const { fmtInt, fmtNum, escapeHtml, typeColor, DATASETS, CAP_UNITS, prospection2, zoneTest,
           YEAR_FLOOR, YEAR_FLOOR_LABEL } = CONFIG;
 
   const state = {
@@ -17,8 +17,11 @@ const Filters = (() => {
     operator: '',
     status: '',      // '' | 'open' | 'closed'
     window: '',      // '' | 'echue' | '2026-2029' | '2030+'
-    prospection: false, // filtre prospection 1 (périmètre thèse)
+    prospection: false, // filtre prospection v2 (périmètre thèse, 18/09/2026)
+    zone: false,        // zone test (Hauts-de-France, Grand Est, Normandie)
+    power: '',          // '' | '250' | '500' | '1000' : puissance cogé minimale (kWé)
   };
+  const POWER_VALUES = ['250', '500', '1000'];
 
   const bounds = { yearMin: null, yearMax: null, hasPre: false };
   let allData = [];
@@ -114,7 +117,9 @@ const Filters = (() => {
     if (p.has('o')) state.operator = p.get('o');
     if (p.has('s') && ['open', 'closed'].includes(p.get('s'))) state.status = p.get('s');
     if (p.has('w') && ['echue', '2026-2029', '2030+'].includes(p.get('w'))) state.window = p.get('w');
-    if (p.get('p') === '1') state.prospection = true;
+    if (p.get('p') === '1' || p.get('p') === '2') state.prospection = true; // p=1 : anciens liens
+    if (p.get('z') === '1') state.zone = true;
+    if (p.has('k') && POWER_VALUES.includes(p.get('k'))) state.power = p.get('k');
     if (p.has('y')) {
       const [a, b] = p.get('y').split('-').map(Number);
       if (a >= bounds.yearMin && a <= bounds.yearMax) state.yearMin = a;
@@ -135,7 +140,9 @@ const Filters = (() => {
     if (state.operator) p.set('o', state.operator);
     if (state.status) p.set('s', state.status);
     if (state.window) p.set('w', state.window);
-    if (state.prospection) p.set('p', '1');
+    if (state.prospection) p.set('p', '2');
+    if (state.zone) p.set('z', '1');
+    if (state.power) p.set('k', state.power);
     if (state.yearMin !== bounds.yearMin || state.yearMax !== bounds.yearMax)
       p.set('y', `${state.yearMin}-${state.yearMax}`);
     if (state.types.size !== allTypes.length) p.set('t', [...state.types].join('|'));
@@ -209,9 +216,22 @@ const Filters = (() => {
       applyFilters();
     });
 
-    // Filtre prospection 1
+    // Filtre prospection v2
     document.getElementById('filter-prospection').addEventListener('change', (e) => {
       state.prospection = e.target.checked;
+      applyFilters();
+    });
+    // Zone test
+    document.getElementById('filter-zone').addEventListener('change', (e) => {
+      state.zone = e.target.checked;
+      applyFilters();
+    });
+    // Puissance cogé minimale
+    document.getElementById('filter-power').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-power]');
+      if (!btn) return;
+      state.power = btn.dataset.power;
+      syncSegmented('filter-power', 'power', state.power);
       applyFilters();
     });
     const infoBtn = document.getElementById('prospection-info-btn');
@@ -283,6 +303,8 @@ const Filters = (() => {
     syncSegmented('filter-status', 'status', state.status);
     syncSegmented('filter-window', 'window', state.window);
     document.getElementById('filter-prospection').checked = state.prospection;
+    document.getElementById('filter-zone').checked = state.zone;
+    syncSegmented('filter-power', 'power', state.power);
     if (loadedBases.length > 1) syncSegmented('filter-base', 'base', state.base);
     updateYearUI();
   }
@@ -296,6 +318,8 @@ const Filters = (() => {
     if (state.status) n++;
     if (state.window) n++;
     if (state.prospection) n++;
+    if (state.zone) n++;
+    if (state.power) n++;
     if (state.types.size !== allTypes.length) n++;
     if (state.yearMin !== bounds.yearMin || state.yearMax !== bounds.yearMax) n++;
     return n;
@@ -308,7 +332,10 @@ const Filters = (() => {
     const yearMin = state.yearMin === bounds.yearMin ? -Infinity : state.yearMin;
 
     filteredData = allData.filter(d => {
-      if (state.prospection && !prospection1(d)) return false;
+      if (state.prospection && !prospection2(d)) return false;
+      if (state.zone && !zoneTest(d)) return false;
+      // puissance : ne concerne que les cogés (l'injection n'a pas de kWé)
+      if (state.power && d.base === 'cogen' && (d.puissanceKw || 0) < Number(state.power)) return false;
       if (state.base && d.base !== state.base) return false;
       if (state.search) {
         const hit = (d.nom || '').toLowerCase().includes(state.search)
@@ -388,6 +415,8 @@ const Filters = (() => {
     state.status = '';
     state.window = '';
     state.prospection = false;
+    state.zone = false;
+    state.power = '';
     state.types = new Set(allTypes);
     state.yearMin = bounds.yearMin;
     state.yearMax = bounds.yearMax;

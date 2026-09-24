@@ -153,28 +153,62 @@ const CONFIG = (() => {
     return { annee: null, hyp: null };
   }
 
-  /* ---- Filtre prospection 1 ----
-     Périmètre thèse (CR weekly 12/06/2026 + stratégie d'entrée v2) :
+  /* ---- Paramètres de screening (v2) ----
+     Les seuils vivent dans tools/screening_params.json (chargé par app.js) ;
+     les valeurs ci-dessous sont la copie de secours si le fichier est
+     inaccessible. Sources : BC 14/09/2026, AdlF 18/09/2026, annexe
+     réglementaire 24/09/2026. */
+  const PARAMS = {
+    cogen: { puissance_kw: { plancher: 250, cible: 500, priorite: 1000 } },
+    injection: { types: ['Agricole autonome', 'Agricole territorial', 'Industriel territorial'],
+                 capacite_gwh_an: { min: 5, max: null } },
+    geographie: { zone_test: ['Hauts-de-France', 'Grand Est', 'Normandie'] },
+  };
+  function setParams(p) {
+    if (!p) return;
+    if (p.cogen && p.cogen.puissance_kw) PARAMS.cogen.puissance_kw = p.cogen.puissance_kw;
+    if (p.injection) {
+      if (p.injection.types) PARAMS.injection.types = p.injection.types;
+      if (p.injection.capacite_gwh_an) PARAMS.injection.capacite_gwh_an = p.injection.capacite_gwh_an;
+    }
+    if (p.geographie && p.geographie.zone_test) PARAMS.geographie.zone_test = p.geographie.zone_test;
+  }
+
+  /* ---- Filtre prospection v2 ----
+     Périmètre thèse (reprise 18/09/2026, enseignements BC 14/09/2026) :
      · Injection : types agricoles + industriel territorial, site ouvert,
-       capacité 5-25 GWh/an (cible brownfield ; < 25 GWh = guichet ouvert).
-     · Cogé : filière Bioénergies, en service, >= 1 GWh él/an (exclusion
-       micro-unités), combustible non renseigné = méthanisation (un
-       combustible spécifié — bois, déchets ménagers/industriels,
-       papeterie, biogaz de STEP — est hors cible de conversion). */
-  const PROSPECTION1_TYPES_INJ = ['Agricole autonome', 'Agricole territorial', 'Industriel territorial'];
-  function prospection1(d) {
+       capacité >= 5 GWh/an. Plus de plafond 25 GWh : ce plafond traduisait
+       l'éligibilité au guichet ouvert, réservé aux < 13 GWh depuis l'arrêté
+       du 10/08/2026 et abrogé au 31/12/2026 ; un brownfield injection se
+       valorise désormais tarif en cours + passerelle CPB, quelle que soit
+       sa taille.
+     · Cogé : filière Bioénergies, en service, combustible non renseigné
+       (méthanisation ; bois, déchets ménagers/industriels, papeterie,
+       biogaz de STEP = hors cible de conversion), puissance >= plancher
+       (250 kWé, seuil BC/GRDF en dessous duquel une conversion n'est pas
+       viable). L'ancien seuil « >= 1 GWh él/an » est remplacé par la
+       puissance, qui est la donnée utilisée par la filière. */
+  function prospection2(d) {
     if (d.base === 'injection') {
-      return PROSPECTION1_TYPES_INJ.includes(d.type)
-        && d.ouvert && d.capacite >= 5 && d.capacite <= 25;
+      const c = PARAMS.injection.capacite_gwh_an;
+      return PARAMS.injection.types.includes(d.type) && d.ouvert
+        && d.capacite >= (c.min || 0) && (c.max == null || d.capacite <= c.max);
     }
     if (d.base === 'cogen') {
-      return d.type === 'Cogénération — Bioénergies'
-        && d.ouvert && d.capacite >= 1 && !d.combustible;
+      return d.type === 'Cogénération — Bioénergies' && d.ouvert && !d.combustible
+        && (d.puissanceKw || 0) >= PARAMS.cogen.puissance_kw.plancher;
     }
     return false;
   }
 
+  /* ---- Zone test (AdlF 18/09/2026) ----
+     Terrains vierges pour les premiers contacts : Nord, Est, Normandie.
+     Filtre, pas de pondération : la vue nationale reste neutre. */
+  function zoneTest(d) {
+    return PARAMS.geographie.zone_test.includes(d.region);
+  }
+
   return { PALETTE, TYPE_COLORS, TYPE_FALLBACK, DATASETS, CAP_UNITS, SOURCE_NOTE,
-           YEAR_FLOOR, YEAR_FLOOR_LABEL,
-           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, echeance, prospection1 };
+           YEAR_FLOOR, YEAR_FLOOR_LABEL, PARAMS, setParams,
+           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, echeance, prospection2, zoneTest };
 })();
