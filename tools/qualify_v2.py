@@ -192,8 +192,10 @@ def gmaps_search(d):
     ou « méthanisation + commune » si le nom est masqué au registre."""
     from urllib.parse import quote
     masked = str(d.get("nom") or "").strip().lower() in ("confidentiel", "-", "")
-    q = f"méthanisation {d.get('commune', '')} {d.get('departement', '')}" if masked else f"{d.get('nom')} {d.get('commune', '')}"
-    return "https://www.google.com/maps/search/?api=1&query=" + quote(q.strip())
+    name = ((d.get("icpe") or {}).get("nom") if masked else d.get("nom")) or None
+    if not name:
+        return ""  # nom masqué et pas d'ICPE : pas de recherche fiable, la colonne coordonnées reste
+    return "https://www.google.com/maps/search/?api=1&query=" + quote(f"{name} {d.get('commune', '')}".strip())
 
 
 def elec_row(rank, d):

@@ -200,21 +200,26 @@ const CONFIG = (() => {
      Retourne { primary: {href, label, title}, secondary: {…} | null }. */
   const MASKED_NAMES = ['confidentiel', '-', ''];
   function gmapsLinks(d) {
+    const onSite = d.geoPrecision && d.geoPrecision !== 'commune';   // position ICPE (étape 10) ou coordonnées de site
     const coords = (d.lat != null && d.lon != null)
-      ? { href: `https://www.google.com/maps?q=${d.lat},${d.lon}`, label: 'Google Maps (coordonnées) ↗',
-          title: d.geoPrecision === 'commune' ? 'Centre de la commune, pas le site' : 'Coordonnées du site' }
+      ? { href: `https://www.google.com/maps?q=${d.lat},${d.lon}`,
+          label: onSite ? 'Google Maps (position) ↗' : 'Google Maps (position approximative) ↗',
+          title: onSite ? "Position de l'installation (ICPE ou registre)" : 'Centre de la commune, pas le site' }
       : null;
     if (d.base !== 'cogen') return { primary: coords, secondary: null };
     const masked = MASKED_NAMES.includes(String(d.nom || '').trim().toLowerCase());
-    const query = masked
-      ? `méthanisation ${d.commune || ''} ${d.departement || ''}`
-      : `${d.nom} ${d.commune || ''}`;
+    // nom masqué au registre électrique : le nom de l'exploitant ICPE, s'il existe, sert de requête ;
+    // sinon pas de recherche (« méthanisation + commune » renvoyait une liste de voisins, constat AG 24/09)
+    const name = masked ? (d.icpe && d.icpe.nom ? d.icpe.nom : null) : d.nom;
+    if (!name) return { primary: coords, secondary: null };
+    const query = `${name} ${d.commune || ''}`.trim();
     const search = {
-      href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query.trim())}`,
-      label: masked ? 'Google Maps (méthanisation + commune) ↗' : 'Google Maps (site) ↗',
-      title: masked ? `Recherche « ${query.trim()} » : nom masqué au registre, à confirmer` : `Recherche « ${query.trim()} »`,
+      href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
+      label: masked ? 'Google Maps (exploitant ICPE) ↗' : 'Google Maps (site) ↗',
+      title: masked ? `Recherche « ${query} » : nom masqué au registre, nom ICPE utilisé` : `Recherche « ${query} »`,
     };
-    return { primary: search, secondary: coords };
+    // position exacte connue : les coordonnées d'abord, la recherche en second
+    return onSite ? { primary: coords, secondary: search } : { primary: search, secondary: coords };
   }
 
   /* ---- Échéance de contrat estimée ----
