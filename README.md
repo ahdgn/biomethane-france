@@ -57,6 +57,14 @@ scoring du radar sont ignorées.
 - **Millésime** : registre ODRÉ au 01/01/2025 ; radar cogé extrait mi-2026.
   Pas de mise à jour automatique à ce stade.
 
+## Versioning v2 (septembre 2026)
+
+Le plan de mise à jour du screening (cadre réglementaire de l'été 2026, filtres
+Benoît Condoumi / Antoine de la Faire, apports de `biomethane-germany`) est tenu
+dans [`BACKLOG.md`](BACKLOG.md) : une PR par étape, du plus simple au plus
+incertain. Les seuils sont dans [`tools/screening_params.json`](tools/screening_params.json).
+Contexte réglementaire : note `Biomethane France/Roadmap/2026-09-24_Annexe_reglementaire_Biomethane_France.md` (OneDrive Nautilus).
+
 ---
 
 © Nautilus — Tous droits réservés.
