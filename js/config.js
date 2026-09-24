@@ -127,6 +127,28 @@ const CONFIG = (() => {
       }),
     },
   ];
+  /* ---- Registre équipe (Airtable -> data/pipeline.json) ----
+     Catégories saisies par l'équipe dans Airtable (REGISTER.md) ; clés
+     internes produites par tools/sync_register.py. Défauts : unknown / non noté. */
+  const EVAL_LABELS = {
+    owners: 'Exploitant connu',
+    feedstock: "Fournisseurs d'intrants à proximité",
+    rejected: 'Évalué et écarté',
+    evaluating: "En cours d'évaluation",
+    unknown: 'Non évalué',
+  };
+  const TAG_LABELS = {
+    owners: "On connaît l'exploitant",
+    worked: 'Déjà travaillé sur le site',
+    politicians: 'Élus / collectivité connus',
+    engineering: "Bureau d'études connu",
+  };
+  const GRID_LABELS = { easy: 'Facile', medium: 'Moyenne', hard: 'Difficile' };
+  /* Lien partagé du formulaire Airtable « Qualifier un site » (voir REGISTER.md).
+     Vide = le panneau montre l'identité du site et explique que le formulaire
+     n'est pas encore branché. */
+  const REGISTER_FORM_URL = '';
+
   // Libellés des critères du score v2 (clés de screening_params.json)
   const SCORE_LABELS = {
     puissance: 'puissance', fenetre_echeance: 'échéance', coefficient_cpb: 'coef. CPB', reseau: 'réseau GRDF',
@@ -304,6 +326,7 @@ const CONFIG = (() => {
   }
 
   return { PALETTE, TYPE_COLORS, TYPE_FALLBACK, DATASETS, CAP_UNITS, SOURCE_NOTE, SCORE_LABELS,
+           EVAL_LABELS, TAG_LABELS, GRID_LABELS, REGISTER_FORM_URL,
            YEAR_FLOOR, YEAR_FLOOR_LABEL, PARAMS, setParams,
            fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, echeance, echeanceTranche, cpbInfo,
            prospection2, zoneTest };

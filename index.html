@@ -10,7 +10,7 @@
   <!-- Librairies vendorisées (pas de CDN, pas de fonte externe) -->
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
-  <link rel="stylesheet" href="css/style.css?v=20260924-6">
+  <link rel="stylesheet" href="css/style.css?v=20260924-7">
 </head>
 <body>
 
@@ -69,6 +69,27 @@
             <span class="switch-text">Zone test : Hauts-de-France, Grand Est, Normandie</span>
           </label>
         </div>
+        <div class="prospection-row">
+          <label class="switch">
+            <input type="checkbox" id="filter-pipeline">
+            <span class="switch-track" aria-hidden="true"></span>
+            <span class="switch-text">Pipeline Nautilus seulement (registre équipe, projet renseigné)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Registre équipe : statut de relation -->
+      <div class="filter-group">
+        <label class="filter-label" for="filter-eval">Statut de relation (registre équipe)</label>
+        <select id="filter-eval">
+          <option value="">Tous</option>
+          <option value="owners">Exploitant connu</option>
+          <option value="feedstock">Fournisseurs d'intrants à proximité</option>
+          <option value="evaluating">En cours d'évaluation</option>
+          <option value="rejected">Évalué et écarté</option>
+          <option value="unknown">Non évalué</option>
+        </select>
+        <span class="filter-hint">Saisi par l'équipe dans Airtable via le bouton « ✎ Qualifier » des fiches, ramené par tools/sync_register.py (REGISTER.md).</span>
       </div>
 
       <!-- Priorité du score v2 -->
@@ -312,6 +333,25 @@
     </main>
   </div>
 
+  <!-- PANNEAU QUALIFICATION (registre Airtable) -->
+  <aside class="qualify-drawer" id="qualify-drawer" hidden aria-label="Qualifier ce site">
+    <div class="qualify-head">
+      <h2>Qualifier ce site</h2>
+      <button class="icon-btn" id="qualify-close" aria-label="Fermer le panneau de qualification">✕</button>
+    </div>
+    <div class="qualify-site" id="qualify-site"></div>
+    <div class="qualify-form">
+      <p class="qualify-noform" id="qualify-noform" hidden>
+        Le formulaire du registre n'est pas encore branché : créer le formulaire
+        partagé dans la base Airtable « Biomethane France Screening tool » et coller
+        son lien dans <code>REGISTER_FORM_URL</code> (voir REGISTER.md).
+      </p>
+      <iframe id="qualify-frame" hidden title="Formulaire de qualification du site (Airtable)"></iframe>
+    </div>
+    <p class="qualify-hint">L'envoi crée une fiche dans le registre équipe (Airtable).
+    Elle apparaît sur la carte après la prochaine synchronisation du registre.</p>
+  </aside>
+
   <!-- FOOTER -->
   <footer class="app-footer" id="app-footer">
     <span id="footer-source"></span>
@@ -324,11 +364,12 @@
   <script src="vendor/chartjs/chart.umd.min.js"></script>
 
   <!-- App -->
-  <script src="js/config.js?v=20260924-6"></script>
-  <script src="js/filters.js?v=20260924-6"></script>
-  <script src="js/map.js?v=20260924-6"></script>
-  <script src="js/charts.js?v=20260924-6"></script>
-  <script src="js/table.js?v=20260924-6"></script>
-  <script src="js/app.js?v=20260924-6"></script>
+  <script src="js/config.js?v=20260924-7"></script>
+  <script src="js/filters.js?v=20260924-7"></script>
+  <script src="js/map.js?v=20260924-7"></script>
+  <script src="js/charts.js?v=20260924-7"></script>
+  <script src="js/table.js?v=20260924-7"></script>
+  <script src="js/qualify.js?v=20260924-7"></script>
+  <script src="js/app.js?v=20260924-7"></script>
 </body>
 </html>
