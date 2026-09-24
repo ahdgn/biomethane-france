@@ -76,6 +76,9 @@ const CONFIG = (() => {
         lon: d.coordonnees ? d.coordonnees.lon : null,
         geoPrecision: 'site',
         zonage: d.zonage && d.zonage.libelle ? d.zonage : null, // zonages « NC » (non communiqués) ignorés
+        score: d.score_v2 != null ? d.score_v2 : null,   // score v2 (tools/qualify_v2.py), périmètre seulement
+        priorite: d.priorite_v2 || null,
+        scoreDetail: d.score_detail || null,
       }),
     },
     {
@@ -118,9 +121,18 @@ const CONFIG = (() => {
         distInjection: d.dist_injection_km != null ? d.dist_injection_km : null,
         injectionProche: d.injection_proche || '',
         zonage: d.zonage && d.zonage.libelle ? d.zonage : null, // zonages « NC » (non communiqués) ignorés
+        score: d.score_v2 != null ? d.score_v2 : null,
+        priorite: d.priorite_v2 || null,
+        scoreDetail: d.score_detail || null,
       }),
     },
   ];
+  // Libellés des critères du score v2 (clés de screening_params.json)
+  const SCORE_LABELS = {
+    puissance: 'puissance', fenetre_echeance: 'échéance', coefficient_cpb: 'coef. CPB', reseau: 'réseau GRDF',
+    facteur_charge: 'facteur de charge', capacite: 'capacité', tarif_residuel: 'tarif restant', type: 'type',
+    augmentation_prevue: 'augmentation prévue',
+  };
 
   // Unité de capacité par base (les GWh injection ≠ GWh électriques)
   const CAP_UNITS = { injection: 'GWh/an', cogen: 'GWh él/an' };
@@ -199,6 +211,7 @@ const CONFIG = (() => {
            date_butoir_injection: '2029-12-31', annee_conversion_defaut: 2028 },
     reseau: { distance_km: { cible: 4, max: 5, seuil_exclusion: 10 }, distance_paliers_km: [2, 5, 10],
               rayon_recherche_km: 15 },
+    score_v2: { priorites: { elec: { A: 75, B: 60, C: 45 }, injection: { A: 92, B: 85, C: 75 } } },
   };
   function setParams(p) {
     if (!p) return;
@@ -211,6 +224,7 @@ const CONFIG = (() => {
     if (p.geographie && p.geographie.zone_test) PARAMS.geographie.zone_test = p.geographie.zone_test;
     if (p.cpb) Object.assign(PARAMS.cpb, p.cpb);
     if (p.reseau) Object.assign(PARAMS.reseau, p.reseau);
+    if (p.score_v2) Object.assign(PARAMS.score_v2, p.score_v2);
   }
 
   /* ---- Tranche d'échéance de contrat ----
@@ -289,7 +303,7 @@ const CONFIG = (() => {
     return PARAMS.geographie.zone_test.includes(d.region);
   }
 
-  return { PALETTE, TYPE_COLORS, TYPE_FALLBACK, DATASETS, CAP_UNITS, SOURCE_NOTE,
+  return { PALETTE, TYPE_COLORS, TYPE_FALLBACK, DATASETS, CAP_UNITS, SOURCE_NOTE, SCORE_LABELS,
            YEAR_FLOOR, YEAR_FLOOR_LABEL, PARAMS, setParams,
            fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, echeance, echeanceTranche, cpbInfo,
            prospection2, zoneTest };

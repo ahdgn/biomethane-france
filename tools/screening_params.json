@@ -61,12 +61,13 @@
   },
 
   "score_v2": {
-    "_comment": "Pondération proposée pour l'étape 6, à valider. Total 100.",
-    "puissance": 25,
-    "fenetre_echeance": 25,
-    "fenetre_coefficient_095": 15,
-    "desserte_gaz": 20,
-    "type_intrants": 15,
-    "region": 0
+    "_comment": "Pondération du score v2 (tools/qualify_v2.py), proposition du 24/09/2026 à valider avec AdlF. Grilles par critère dans le script et dans la feuille Méthodologie du classeur. Région : 0 (filtre zone test, pas de bonus).",
+    "elec": { "puissance": 25, "fenetre_echeance": 25, "coefficient_cpb": 15, "reseau": 20, "facteur_charge": 15 },
+    "injection": { "capacite": 30, "tarif_residuel": 35, "type": 20, "augmentation_prevue": 15 },
+    "priorites": {
+      "_comment": "Seuils calibrés sur la distribution du 24/09/2026 : A ≈ 13 % des sites scorés de chaque base.",
+      "elec": { "A": 75, "B": 60, "C": 45 },
+      "injection": { "A": 92, "B": 85, "C": 75 }
+    }
   }
 }

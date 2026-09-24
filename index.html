@@ -10,7 +10,7 @@
   <!-- Librairies vendorisées (pas de CDN, pas de fonte externe) -->
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
-  <link rel="stylesheet" href="css/style.css?v=20260924-5">
+  <link rel="stylesheet" href="css/style.css?v=20260924-6">
 </head>
 <body>
 
@@ -69,6 +69,18 @@
             <span class="switch-text">Zone test : Hauts-de-France, Grand Est, Normandie</span>
           </label>
         </div>
+      </div>
+
+      <!-- Priorité du score v2 -->
+      <div class="filter-group">
+        <span class="filter-label" id="label-prio">Score v2 · priorité</span>
+        <div class="segmented" id="filter-prio" role="group" aria-labelledby="label-prio">
+          <button class="seg-btn" data-prio="" aria-pressed="true">Toutes</button>
+          <button class="seg-btn" data-prio="A" aria-pressed="false">A</button>
+          <button class="seg-btn" data-prio="AB" aria-pressed="false">A + B</button>
+          <button class="seg-btn" data-prio="ABC" aria-pressed="false">A + B + C</button>
+        </div>
+        <span class="filter-hint">Score sur 100 (tools/qualify_v2.py, pondération dans screening_params.json, proposition du 24/09/2026 à valider avec AdlF). Priorités calibrées par base (A ≈ 13 % des sites scorés) : élec. biogaz A ≥ 75 · B ≥ 60 · C ≥ 45 ; injection A ≥ 92 · B ≥ 85 · C ≥ 75. Seuls les sites du périmètre prospection v2 sont scorés.</span>
       </div>
 
       <!-- Puissance électrique minimale (kWé) -->
@@ -278,6 +290,8 @@
                   <th scope="col" data-sort="dateMes">Mise en service</th>
                   <th scope="col" data-sort="echeanceAnnee" class="col-num"
                       title="Échéance de contrat estimée — injection 15 ans · élec. biogaz 20 ans (contrats BG)">Échéance (est.)</th>
+                  <th scope="col" data-sort="score" class="col-num"
+                      title="Score v2 sur 100 et priorité (élec. A ≥ 75, B ≥ 60, C ≥ 45 ; injection A ≥ 92, B ≥ 85, C ≥ 75) — sites du périmètre prospection v2 seulement">Score</th>
                   <th scope="col" data-sort="distGrdf" class="col-num"
                       title="Distance au réseau GRDF en service (km, à vol d'oiseau depuis le centroïde de commune) — élec. biogaz">Réseau (km)</th>
                   <th scope="col" data-sort="cpbCoef" class="col-num"
@@ -310,11 +324,11 @@
   <script src="vendor/chartjs/chart.umd.min.js"></script>
 
   <!-- App -->
-  <script src="js/config.js?v=20260924-5"></script>
-  <script src="js/filters.js?v=20260924-5"></script>
-  <script src="js/map.js?v=20260924-5"></script>
-  <script src="js/charts.js?v=20260924-5"></script>
-  <script src="js/table.js?v=20260924-5"></script>
-  <script src="js/app.js?v=20260924-5"></script>
+  <script src="js/config.js?v=20260924-6"></script>
+  <script src="js/filters.js?v=20260924-6"></script>
+  <script src="js/map.js?v=20260924-6"></script>
+  <script src="js/charts.js?v=20260924-6"></script>
+  <script src="js/table.js?v=20260924-6"></script>
+  <script src="js/app.js?v=20260924-6"></script>
 </body>
 </html>

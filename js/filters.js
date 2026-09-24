@@ -23,6 +23,7 @@ const Filters = (() => {
     power: '',          // '' | '250' | '500' | '1000' : puissance cogé minimale (kWé)
     radius: null,       // null | { lat, lon, km, label } : recherche par rayon
     grid: '',           // '' | '2' | '5' | '10' | 'far' : distance au réseau GRDF (élec. biogaz)
+    prio: '',           // '' | 'A' | 'AB' | 'ABC' : priorité du score v2 (sites scorés seulement)
   };
   const RADIUS_MIN = 5, RADIUS_MAX = 150;
   const POWER_VALUES = ['250', '500', '1000'];
@@ -154,6 +155,7 @@ const Filters = (() => {
     }
     if (p.has('c') && ['095', '08'].includes(p.get('c'))) state.cpb = p.get('c');
     if (p.has('g') && gridKeys().includes(p.get('g'))) state.grid = p.get('g');
+    if (p.has('pr') && ['A', 'AB', 'ABC'].includes(p.get('pr'))) state.prio = p.get('pr');
     if (p.get('p') === '1' || p.get('p') === '2') state.prospection = true; // p=1 : anciens liens
     if (p.get('z') === '1') state.zone = true;
     if (p.has('k') && POWER_VALUES.includes(p.get('k'))) state.power = p.get('k');
@@ -184,6 +186,7 @@ const Filters = (() => {
     if (state.window) p.set('w', state.window);
     if (state.cpb) p.set('c', state.cpb);
     if (state.grid) p.set('g', state.grid);
+    if (state.prio) p.set('pr', state.prio);
     if (state.prospection) p.set('p', '2');
     if (state.zone) p.set('z', '1');
     if (state.power) p.set('k', state.power);
@@ -295,6 +298,14 @@ const Filters = (() => {
       syncSegmented('filter-window', 'window', state.window);
       applyFilters();
     });
+    // Priorité du score v2
+    document.getElementById('filter-prio').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-prio]');
+      if (!btn) return;
+      state.prio = btn.dataset.prio;
+      syncSegmented('filter-prio', 'prio', state.prio);
+      applyFilters();
+    });
     // Distance au réseau GRDF (élec. biogaz)
     document.getElementById('filter-grid').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-grid]');
@@ -378,6 +389,7 @@ const Filters = (() => {
     syncSegmented('filter-window', 'window', state.window);
     syncSegmented('filter-cpb', 'cpb', state.cpb);
     syncSegmented('filter-grid', 'grid', state.grid);
+    syncSegmented('filter-prio', 'prio', state.prio);
     document.getElementById('filter-prospection').checked = state.prospection;
     document.getElementById('filter-zone').checked = state.zone;
     syncSegmented('filter-power', 'power', state.power);
@@ -395,6 +407,7 @@ const Filters = (() => {
     if (state.window) n++;
     if (state.cpb) n++;
     if (state.grid) n++;
+    if (state.prio) n++;
     if (state.prospection) n++;
     if (state.zone) n++;
     if (state.power) n++;
@@ -430,6 +443,10 @@ const Filters = (() => {
       if (d.annee != null && (d.annee < yearMin || d.annee > state.yearMax)) return false;
       if (state.operator && d.operateur !== state.operator) return false;
       if (state.window && d.echeanceTranche !== state.window) return false; // pas d'estimation -> hors fenêtre
+      // priorité du score v2 : seuls les sites scorés (périmètre) passent
+      if (state.prio) {
+        if (!d.priorite || !state.prio.includes(d.priorite)) return false;
+      }
       // distance au réseau GRDF : ne concerne que l'électricité biogaz (l'injection passe)
       if (state.grid && d.base === 'cogen') {
         const km = d.distGrdf;
@@ -503,6 +520,7 @@ const Filters = (() => {
     state.window = '';
     state.cpb = '';
     state.grid = '';
+    state.prio = '';
     state.prospection = false;
     state.zone = false;
     state.power = '';

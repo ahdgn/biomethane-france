@@ -168,6 +168,12 @@ const MapView = (() => {
     if (d.echeanceAnnee != null)
       rows.push(['Échéance contrat (est.)',
         d.echeanceTrancheLabel ? `${d.echeanceAnnee} · tranche ${d.echeanceTrancheLabel}` : String(d.echeanceAnnee)]);
+    if (d.score != null) {
+      const det = d.scoreDetail
+        ? Object.entries(d.scoreDetail).map(([k, v]) => `${CONFIG.SCORE_LABELS[k] || k} ${fmtNum(v, 0)}`).join(' · ')
+        : '';
+      rows.push(['Score v2', `${fmtNum(d.score, 0)} / 100 · priorité ${d.priorite}${det ? ' (' + det + ')' : ''}`]);
+    }
     if (d.base === 'cogen') {
       rows.push(['Réseau GRDF (est.)', d.distGrdf != null
         ? `${fmtNum(d.distGrdf, 1)} km à vol d'oiseau`
