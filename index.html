@@ -10,7 +10,7 @@
   <!-- Librairies vendorisées (pas de CDN, pas de fonte externe) -->
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
-  <link rel="stylesheet" href="css/style.css?v=20260924-1">
+  <link rel="stylesheet" href="css/style.css?v=20260924-2">
 </head>
 <body>
 
@@ -81,6 +81,16 @@
           <button class="seg-btn" data-power="1000" aria-pressed="false">≥ 1 000</button>
         </div>
         <span class="filter-hint">Plancher 250 · cible 500 · priorité 1 000 kWé (BC 14/09/2026). Sans effet sur les points d'injection.</span>
+      </div>
+
+      <!-- Filtre rayon (activé depuis un popup carte) -->
+      <div class="filter-group" id="group-radius" hidden>
+        <span class="filter-label">Recherche par rayon</span>
+        <span class="filter-hint" id="radius-label"></span>
+        <input type="range" id="radius-km" class="radius-slider" min="5" max="150" step="5" value="50"
+               aria-label="Rayon en kilomètres">
+        <div class="dual-range-bounds" aria-hidden="true"><span>5 km</span><span>150 km</span></div>
+        <button class="btn-secondary" id="radius-clear">Retirer le rayon</button>
       </div>
 
       <!-- Base (visible quand plusieurs jeux de données sont chargés) -->
@@ -283,11 +293,11 @@
   <script src="vendor/chartjs/chart.umd.min.js"></script>
 
   <!-- App -->
-  <script src="js/config.js?v=20260924-1"></script>
-  <script src="js/filters.js?v=20260924-1"></script>
-  <script src="js/map.js?v=20260924-1"></script>
-  <script src="js/charts.js?v=20260924-1"></script>
-  <script src="js/table.js?v=20260924-1"></script>
-  <script src="js/app.js?v=20260924-1"></script>
+  <script src="js/config.js?v=20260924-2"></script>
+  <script src="js/filters.js?v=20260924-2"></script>
+  <script src="js/map.js?v=20260924-2"></script>
+  <script src="js/charts.js?v=20260924-2"></script>
+  <script src="js/table.js?v=20260924-2"></script>
+  <script src="js/app.js?v=20260924-2"></script>
 </body>
 </html>

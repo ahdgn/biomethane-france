@@ -68,7 +68,21 @@
     document.getElementById('header-meta').textContent =
       loaded.map(r => `${fmtInt(r.records.length)} ${r.ds.label.toLowerCase() === 'injection'
         ? 'points d\'injection' : r.ds.label.toLowerCase()}`).join(' · ');
-    document.getElementById('footer-source').textContent = `Sources : ${SOURCE_NOTE}`;
+    // Note de source : millésimes lus dans data/meta.json (écrit par l'ETL),
+    // SOURCE_NOTE de config.js en secours.
+    let sourceNote = SOURCE_NOTE;
+    try {
+      const mr = await fetch('data/meta.json');
+      if (mr.ok) {
+        const meta = await mr.json();
+        const fmtY = (iso) => iso ? CONFIG.fmtDate(iso) : '';
+        sourceNote = [
+          meta.injection ? `Registre ODRÉ (biométhane, ${fmtY(meta.injection.extraction)})` : null,
+          meta.cogen && loadedBases.includes('cogen') ? `Registre EDF OA (cogénérations, ${fmtY(meta.cogen.extraction)})` : null,
+        ].filter(Boolean).join(' · ');
+      }
+    } catch (e) { /* meta.json absent : note de secours */ }
+    document.getElementById('footer-source').textContent = `Sources : ${sourceNote}`;
     document.getElementById('footer-rights').textContent =
       `© ${new Date().getFullYear()} Nautilus — Tous droits réservés`;
 

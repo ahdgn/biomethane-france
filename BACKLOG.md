@@ -55,19 +55,24 @@ Assurance : élevée. Données déjà présentes (`puissance_kw`, `filiere`,
 `combustible`). Vérification : comptages avant/après (ci-dessus), app
 ouverte en local, liens partagés v1 (`p=1`) toujours acceptés.
 
-## Étape 3 — feat : apports faciles de l'outil allemand (front-end)
+## Étape 3 — feat : apports faciles de l'outil allemand (PR #12)
 
-- [ ] Vue satellite (Esri World Imagery, sans clé), bascule dans la carte
-- [ ] Recherche par rayon : lien « ⌖ 50 km autour » dans chaque popup, curseur
-      continu 10-100 km, auto-zoom, URL partageable (port de `biomethane-germany`)
-- [ ] Contrôle géométrique région / département : coordonnées ODRÉ validées
-      contre les polygones des régions (geo.api.gouv.fr, gratuit) ; la
-      géométrie fait foi, hors zone frontalière
-- [ ] Date d'extraction affichée depuis les données, plus en dur dans le code
+- [x] Vue satellite (Esri World Imagery, sans clé), bascule Carte / Satellite
+- [x] Recherche par rayon : lien « ⌖ 50 km autour » dans chaque popup, curseur
+      5-150 km, cercle et zoom qui suivent le geste, URL partageable (`rad=`)
+- [x] Contrôle géométrique : `tools/check_geo.py` teste chaque site contre les
+      contours des régions (`tools/geo/regions.geo.json`, france-geojson / IGN
+      Admin Express, licence ouverte). Résultat : injection 817/818 dans la
+      bonne région (1 sans coordonnées) ; cogé 995/1002, 6 sans coordonnées,
+      1 centroïde en mer (Perros-Guirec, thermique) dont les coordonnées ont
+      été retirées. Aucune région corrigée.
+- [x] Millésimes dans `data/meta.json`, lus par l'app pour la note de source
+      (ODRÉ 01/01/2025, EDF OA 03/06/2026) ; à écrire par l'ETL à l'étape 5
 - Déjà en place côté France : lien Google Maps par site (Run 1, 27/07/2026)
 
-Assurance : très élevée. Code déjà écrit et testé sur l'outil allemand ;
-aucune donnée nouvelle. Vérification : ouverture de l'app, 5 rayons testés.
+Assurance : très élevée. Code porté de l'outil allemand ; contrôle géométrique
+sans surprise. Vérification : app en local, rayon 50 km autour de Loudéac
+(28 injection, 15 cogé), bascule satellite, réinitialisation.
 
 ## Étape 4 — feat : fenêtre CPB 0,95 et tranches d'échéance
 

@@ -15,6 +15,8 @@ const MapView = (() => {
   // légende repliée par défaut sur petit écran (elle couvrirait la carte)
   let legendCollapsed = window.matchMedia('(max-width: 860px)').matches;
   const markers = new Map(); // id -> marker
+  const dataById = new Map(); // id -> site (lien rayon des popups)
+  let radiusCircle = null;
 
   function init() {
     map = L.map('map', {
@@ -31,11 +33,21 @@ const MapView = (() => {
     // Esri World Light Gray : fond clair institutionnel servi sans clé
     // (CARTO impose désormais une clé API — tuiles filigranées sinon).
     // Tuiles natives jusqu'au zoom 16, suréchantillonnées au-delà.
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    const baseMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Fond de carte &copy; <a href="https://www.esri.com/">Esri</a> · Données &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxNativeZoom: 16,
       maxZoom: 19,
     }).addTo(map);
+    // Vue satellite (port de biomethane-germany, demande équipe 09/09/2026) :
+    // vérifier une installation sur imagerie avant d'aller sur site.
+    // Esri World Imagery, servi sans clé.
+    const baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Imagerie &copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics',
+      maxNativeZoom: 18,
+      maxZoom: 19,
+    });
+    L.control.layers({ 'Carte': baseMap, 'Satellite': baseSat }, null,
+      { position: 'topleft', collapsed: false }).addTo(map);
 
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
@@ -74,12 +86,46 @@ const MapView = (() => {
     map.addLayer(clusterGroup);
 
     addLegend();
+
+    // Lien « 50 km autour » des popups -> filtre rayon
+    map.on('popupopen', (e) => {
+      const el = e.popup.getElement();
+      const a = el.querySelector('a[data-radius-id]');
+      if (a) a.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const d = dataById.get(a.dataset.radiusId);
+        if (d) Filters.setRadius(d.lat, d.lon, 50, d.nom);
+        map.closePopup();
+      });
+    });
+
     // vue d'entrée : la France entière, quelle que soit la taille de l'écran
     fitFrance();
   }
 
   function fitFrance() {
     if (map) map.fitBounds(FRANCE_BOUNDS, { padding: [10, 10] });
+  }
+
+  /* Cercle du filtre rayon : dessiné / retiré par Filters via showRadius /
+     hideRadius. Double trait (halo blanc + pointillés teal), lisible sur
+     fond clair comme sur imagerie satellite. */
+  function showRadius(lat, lon, km) {
+    hideRadius();
+    const casing = L.circle([lat, lon], {
+      radius: km * 1000, color: '#FFFFFF', weight: 5, opacity: 0.85,
+      fill: false, interactive: false,
+    });
+    const dash = L.circle([lat, lon], {
+      radius: km * 1000, color: PALETTE.teal, weight: 2.25,
+      dashArray: '8 8', fillColor: PALETTE.teal, fillOpacity: 0.05,
+      interactive: false,
+    });
+    radiusCircle = L.layerGroup([casing, dash]).addTo(map);
+    map.fitBounds(dash.getBounds(), { padding: [20, 20] });
+  }
+  function hideRadius() {
+    if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
   }
 
   /* Rayon proportionnel à la racine de la capacité (5 → 13 px) */
@@ -129,6 +175,9 @@ const MapView = (() => {
     const gmaps = (d.lat != null && d.lon != null)
       ? `<a class="popup-link" href="https://www.google.com/maps?q=${d.lat},${d.lon}"
            target="_blank" rel="noopener noreferrer">Google Maps ↗</a>` : '';
+    const radiusLink = (d.lat != null && d.lon != null)
+      ? `<a class="popup-link" href="#" data-radius-id="${escapeHtml(d.id)}"
+           title="Ne garder que les sites autour de celui-ci">⌖ 50 km autour</a>` : '';
 
     return `
       <div class="popup-title">${escapeHtml(d.nom)}</div>
@@ -138,6 +187,7 @@ const MapView = (() => {
       </dl>
       <div class="popup-foot">
         <span class="status-tag ${d.ouvert ? 'open' : 'closed'}">${d.ouvert ? 'Ouvert' : 'Fermé'}</span>
+        ${radiusLink}
         ${gmaps}
       </div>
       ${hypNote}${geoNote}`;
@@ -147,8 +197,10 @@ const MapView = (() => {
     clusterGroup.clearLayers();
     markers.clear();
 
+    dataById.clear();
     const layer = [];
     data.forEach(d => {
+      dataById.set(d.id, d);
       if (d.lat == null || d.lon == null) return;
       const marker = L.marker([d.lat, d.lon], {
         icon: createIcon(d),
@@ -239,5 +291,5 @@ const MapView = (() => {
   }
 
   // popupHtml exposé : réutilisé pour la fiche site (one-pager) et les tests
-  return { init, update, focusOn, invalidateSize, fitFrance, popupHtml };
+  return { init, update, focusOn, invalidateSize, fitFrance, showRadius, hideRadius, popupHtml };
 })();
