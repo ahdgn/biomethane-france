@@ -162,19 +162,34 @@ mesurée depuis le centroïde de la commune (± quelques km) ; les zones ELD
 chiffrage : l'étude détaillée GRDF reste indispensable sur la shortlist. Le
 jeu zonages date de 2020 (à surveiller pour une réédition).
 
-## Étape 7 — feat : score v2 /100 et export Excel shortlist
+## Étape 7 — feat : score v2 /100 et export Excel shortlist (PR #16)
 
-- [ ] Port de `qualification_sites.py` (OneDrive, 10/06/2026) dans
-      `tools/qualify_v2.py`, lecture des seuils dans `screening_params.json`
-- [ ] Pondération proposée, à valider avec AdlF : puissance 25, fenêtre
-      d'échéance 25, fenêtre 0,95 15, desserte gaz 20, type et intrants 15 ;
-      région neutre
-- [ ] Sorties : `Nautilus_Qualification_Sites_v2.xlsx` (top 50 cogé, top 50
-      injection, zone test) copié dans `Biomethane France/Screening/`
-- [ ] Filtre prospection v2 = score ≥ seuil
+- [x] `tools/qualify_v2.py` remplace `qualification_sites.py` (OneDrive,
+      10/06/2026) : pondérations et seuils de priorité dans
+      `screening_params.json` (`score_v2`), grilles par critère dans le script
+      et dans la feuille « Méthodologie » du classeur
+- [x] Électricité biogaz (620 sites du périmètre) : puissance 25, fenêtre
+      d'échéance 25, coefficient CPB 15, réseau GRDF 20, facteur de charge 15
+      (proxy d'exploitation en attendant les intrants) ; région 0
+- [x] Injection (746 sites) : capacité 30, tarif restant 35, type 20,
+      augmentation prévue 15
+- [x] Priorités calibrées par base pour A ≈ 13 % des sites scorés : élec.
+      A ≥ 75 / B ≥ 60 / C ≥ 45 ; injection A ≥ 92 / B ≥ 85 / C ≥ 75.
+      Résultat : élec. A 78, B 259, C 225, D 58 (zone test : A 30, B 130) ;
+      injection A 94, B 243, C 193, D 216
+- [x] Score, priorité et détail dans les données de l'app : filtre
+      « Score v2 · priorité » (A / A+B / A+B+C, URL `pr=`), popup, colonne
+      « Score » triable, 3 colonnes CSV
+- [x] Classeur `Nautilus_Qualification_Sites_v2_2026-09-24.xlsx` dans
+      `Biomethane France/Screening/` (OneDrive) : Méthodologie, Top 50 élec.,
+      Top 50 injection, Top 30 zone test, listes complètes scorées, colonnes
+      Contact / Statut prospection / Commentaires AdlF vides
 
-Assurance : moyenne. La pondération est une décision d'équipe ; le classement
-sera contrôlé sur les sites connus d'AdlF (dizaine de sites, action du 18/09).
+Assurance : moyenne. La pondération est une proposition ; à contrôler sur
+la dizaine de sites qu'AdlF identifiera (action du 18/09). Limite visible dans
+le top : des unités territoriales ou de déchets ménagers (AMETYST Montpellier,
+IDEX Amiens) scorent haut sur la taille ; le type d'intrants viendra du
+registre équipe (étape 8).
 
 ## Étape 8 — feat : registre équipe Airtable et panneau Qualifier
 

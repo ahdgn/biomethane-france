@@ -29,6 +29,7 @@ puis ouvrir <http://localhost:8000>.
 | `tools/screening_params.json` | Seuils du screening (puissance, tranches, CPB, zone test) : la config, jamais le code |
 | `tools/build_datasets.py` | ETL : registres ODRÉ → `data/*.json` + `meta.json` (injection telle quelle ; électricité biogaz filtrée sur la filière Bioénergies, géocodée au centroïde de commune par code INSEE) |
 | `tools/enrich_grid.py` | Enrichissement réseau : distance au tronçon GRDF en service le plus proche (open data GRDF), point d'injection le plus proche, zonage de raccordement (ODRÉ) ; cache dans `tools/cache/` |
+| `tools/qualify_v2.py` | Score v2 sur 100 et priorités (pondération dans `screening_params.json`), écrits dans les données ; classeur Excel de shortlist pour l'équipe (OneDrive, `Biomethane France/Screening/`) |
 | `tools/check_geo.py` | Contrôle géométrique : chaque site testé contre les contours des régions (`tools/geo/regions.geo.json`) ; `--apply` corrige la région ou retire des coordonnées hors de France |
 
 ## Mettre à jour les données
@@ -36,7 +37,8 @@ puis ouvrir <http://localhost:8000>.
 ```bash
 python tools/build_datasets.py
 python tools/check_geo.py --apply
-python tools/enrich_grid.py        # ~20 min la première fois (1 225 requêtes GRDF), cache ensuite
+python tools/enrich_grid.py        # ~6 min la première fois (1 225 requêtes GRDF), cache ensuite
+python tools/qualify_v2.py         # score v2 + classeur Excel
 ```
 
 Puis commit des fichiers `data/` sur une branche et PR (chiffres avant/après

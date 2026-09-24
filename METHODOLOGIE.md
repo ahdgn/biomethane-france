@@ -5,7 +5,7 @@ choix de design : ce que l'outil filtre, pourquoi, sur quelle donnée et sur
 quelle source. Il est tenu à jour à chaque PR qui modifie une règle. Le plan de
 versions est dans `BACKLOG.md`, les seuils dans `tools/screening_params.json`.
 
-Dernière mise à jour : 24 septembre 2026 (PR #15, distance au réseau GRDF et zonages de raccordement).
+Dernière mise à jour : 24 septembre 2026 (PR #16, score v2 et shortlist).
 
 ---
 
@@ -228,7 +228,39 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
   2020. C'est un critère de tri ; le coût réel vient de l'étude détaillée
   GRDF, site par site, sur la shortlist.
 
-### 4.9 Ce qui n'est volontairement pas filtré
+### 4.9 Score v2 et priorités
+
+- **Règle** : un score sur 100 pour les sites du périmètre prospection v2,
+  somme de critères pondérés ; les autres sites n'ont pas de score. Priorité
+  A / B / C / D par seuils, calibrés par base pour que A représente environ
+  13 % des sites scorés. Filtre « priorité », colonne triable, export.
+- **Électricité biogaz** (620 sites) : puissance 25 (≥ 1 MWé 100 %, 500-999
+  80 %, 250-499 50 %) · fenêtre d'échéance 25 (≤ 2028 100 %, 2029-30 80 %,
+  2031-33 50 %, après 25 %) · coefficient CPB 15 (1 → 100 %, 0,95 → 80 %,
+  0,8 → 0) · réseau GRDF 20 (≤ 2 km 100 %, ≤ 4 80 %, ≤ 5 60 %, ≤ 10 25 %) ·
+  facteur de charge 15 (≥ 0,7 100 %, 0,5-0,7 60 %, < 0,5 30 %, inconnu
+  40 %). Région : 0.
+- **Injection** (746 sites) : capacité 30 (10-25 GWh 100 %, 25-50 80 %, 5-10
+  60 %, > 50 40 %) · tarif restant 35 (6-10 ans 100 %, 11-12 70 %, 3-5 50 %,
+  ≥ 13 40 %, < 3 30 %) · type 20 (autonome 100 %, territorial 80 %,
+  industriel 50 %) · augmentation prévue 15 (prévue 100 %, aucune 40 %).
+- **Seuils** : élec. A ≥ 75, B ≥ 60, C ≥ 45 ; injection A ≥ 92, B ≥ 85,
+  C ≥ 75. Le tout dans `screening_params.json` (`score_v2`).
+- **Justification** : BC 14/09 (taille, hyper-sélectivité, fin de tarif par
+  tranche, 12 à 15 % de TRI, « une usine mal exploitée »), AdlF 18/09
+  (raccordement), arrêté du 26/12/2025 (coefficient). Le facteur de charge
+  (énergie injectée / puissance × 8 760 h) tient lieu de proxy de qualité
+  d'exploitation faute de donnée d'intrants. Le score de l'injection v1
+  (tarif 35, capacité 25, type 20, région 20) perd sa pondération régionale
+  et gagne l'augmentation prévue.
+- **Effet** : élec. A 78, B 259, C 225, D 58 ; zone test A 30 ; injection
+  A 94, B 243, C 193, D 216.
+- **Limites** : pondération à valider avec AdlF (proposition du 24/09/2026) ;
+  contrôle prévu sur la dizaine de sites qu'il identifiera ; les grosses
+  unités territoriales ou de déchets ménagers scorent haut sur la taille
+  sans que le type d'intrants soit connu ; un score trie, il ne décide pas.
+
+### 4.10 Ce qui n'est volontairement pas filtré
 
 | Critère | Pourquoi pas de filtre dur | Traitement prévu |
 |---|---|---|
@@ -272,6 +304,7 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
 | 24/09/2026 | Tranches d'échéance BC ; coefficient CPB estimé et fenêtre 0,95 à conversion 2028 | Arrêté 26/12/2025, BC 14/09 | #13 |
 | 24/09/2026 | Registres ODRÉ de septembre 2026 ; périmètre électricité biogaz lu sur le code combustible B.MET et non sur la technologie ; outre-mer écarté | Profil du registre national | #14 |
 | 24/09/2026 | Distance au réseau GRDF (open data GRDF, exact au tronçon, mesuré au centroïde de commune), injection la plus proche, zonages de raccordement | BC 14/09, AdlF 18/09, GRDF | #15 |
+| 24/09/2026 | Score v2 : pondération proposée (élec. 25/25/15/20/15, injection 30/35/20/15), priorités calibrées par base, région neutre ; classeur shortlist | Proposition AG / Claude, à valider AdlF | #16 |
 
 ## 7. Questions ouvertes
 
@@ -293,5 +326,7 @@ Détail dans l'annexe réglementaire du 24/09/2026 (OneDrive Nautilus,
   l'app, filtre ≥ 1 000).
 - Les 144 sites d'injection de plus de 25 GWh : dans la thèse brownfield ou
   hors capacité d'achat ? À trancher avec AdlF et JT (modèle).
-- Pondération du score v2, année de conversion par défaut (2028), seuil
-  d'exclusion distance (10 km) : session AdlF du 25/09/2026.
+- Pondération du score v2 (proposition en place depuis la PR #16), année de
+  conversion par défaut (2028), seuil d'exclusion distance (10 km) : session
+  AdlF du 25/09/2026. Contrôle du classement sur la dizaine de sites qu'AdlF
+  identifiera.

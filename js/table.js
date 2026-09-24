@@ -47,7 +47,7 @@ const DataTable = (() => {
         } else {
           sortKey = key;
           // premier clic : ordre le plus utile selon la colonne
-          sortDir = (key === 'capacite' || key === 'dateMes' || key === 'ouvert' || key === 'cpbCoef') ? 'desc' : 'asc';
+          sortDir = (key === 'capacite' || key === 'dateMes' || key === 'ouvert' || key === 'cpbCoef' || key === 'score') ? 'desc' : 'asc';
         }
         updateSortUI();
         render();
@@ -108,6 +108,7 @@ const DataTable = (() => {
         <td class="col-num" title="${unit}">${fmtNum(d.capacite, 2)}</td>
         <td>${fmtDate(d.dateMes)}</td>
         <td class="col-num" title="${escapeHtml(d.echeanceHyp || 'estimation non disponible')}">${d.echeanceAnnee != null ? d.echeanceAnnee : '—'}</td>
+        <td class="col-num" title="${d.scoreDetail ? escapeHtml(Object.entries(d.scoreDetail).map(([k, v]) => `${CONFIG.SCORE_LABELS[k] || k} ${v}`).join(' · ')) : 'hors périmètre prospection v2'}">${d.score != null ? `${fmtNum(d.score, 0)} <span class="kpi-sub">${escapeHtml(d.priorite || '')}</span>` : '—'}</td>
         <td class="col-num" title="${d.base === 'cogen' ? (d.distGrdf != null ? 'distance au réseau GRDF en service, à vol d\'oiseau depuis le centroïde de commune' : 'au-delà de 15 km du réseau GRDF, ou zone desservie par une ELD') : 'élec. biogaz seulement'}">${d.distGrdf != null ? fmtNum(d.distGrdf, 1) : (d.base === 'cogen' ? '> 15' : '—')}</td>
         <td class="col-num" title="${d.cpb ? escapeHtml(d.cpb.atteignable ? `0,95 atteignable de ${d.cpb.first} à ${d.cpb.last}` : `0,95 hors d'atteinte (âge ${d.cpb.ageConv} ans en ${d.cpb.conv})`) : 'méthanisation seulement'}">${d.cpbCoef != null ? fmtNum(d.cpbCoef, 2) : '—'}</td>
         <td><span class="status-tag ${d.ouvert ? 'open' : 'closed'}">${d.ouvert ? 'Ouvert' : 'Fermé'}</span></td>
@@ -130,8 +131,8 @@ const DataTable = (() => {
       let va = a[sortKey];
       let vb = b[sortKey];
       // null : dernier en capacité (desc), dernier en échéance (asc = plus proches d'abord)
-      if (va == null) va = sortKey === 'capacite' || sortKey === 'cpbCoef' ? -Infinity : (sortKey === 'echeanceAnnee' || sortKey === 'distGrdf') ? Infinity : '';
-      if (vb == null) vb = sortKey === 'capacite' || sortKey === 'cpbCoef' ? -Infinity : (sortKey === 'echeanceAnnee' || sortKey === 'distGrdf') ? Infinity : '';
+      if (va == null) va = ['capacite', 'cpbCoef', 'score'].includes(sortKey) ? -Infinity : (sortKey === 'echeanceAnnee' || sortKey === 'distGrdf') ? Infinity : '';
+      if (vb == null) vb = ['capacite', 'cpbCoef', 'score'].includes(sortKey) ? -Infinity : (sortKey === 'echeanceAnnee' || sortKey === 'distGrdf') ? Infinity : '';
 
       let cmp;
       if (typeof va === 'number' && typeof vb === 'number') cmp = va - vb;
@@ -192,7 +193,7 @@ const DataTable = (() => {
   function exportCSV() {
     if (currentData.length === 0) return;
 
-    const headers = ['Base', 'Projet', 'Commune', 'Département', 'Région', 'Type',
+    const headers = ['Base', 'Score v2', 'Priorité v2', 'Détail score', 'Projet', 'Commune', 'Département', 'Région', 'Type',
       'Capacité (GWh/an)', 'Unité capacité', 'Puissance (kWé)', 'Code combustible', 'Technologie', 'Mise en service',
       'Échéance contrat estimée', 'Tranche échéance', 'Hypothèse durée contrat',
       'Âge à la conversion (année par défaut)', 'Coefficient CPB estimé', 'Fenêtre 0,95 (première année)', 'Fenêtre 0,95 (dernière année)',
@@ -203,6 +204,9 @@ const DataTable = (() => {
 
     const rows = currentData.map(d => [
       d.base === 'cogen' ? 'Élec. biogaz' : 'Injection',
+      d.score != null ? String(d.score).replace('.', ',') : '',
+      d.priorite || '',
+      d.scoreDetail ? Object.entries(d.scoreDetail).map(([k, v]) => `${CONFIG.SCORE_LABELS[k] || k} ${v}`).join(' · ') : '',
       d.nom, d.commune, d.departement, d.region, d.type,
       d.capacite != null ? String(d.capacite).replace('.', ',') : '',
       CAP_UNITS[d.base] || '',
