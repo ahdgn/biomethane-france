@@ -83,8 +83,8 @@
         const meta = await mr.json();
         const fmtY = (iso) => iso ? CONFIG.fmtDate(iso) : '';
         sourceNote = [
-          meta.injection ? `Registre ODRÉ (biométhane, ${fmtY(meta.injection.extraction)})` : null,
-          meta.cogen && loadedBases.includes('cogen') ? `Registre EDF OA (cogénérations, ${fmtY(meta.cogen.extraction)})` : null,
+          meta.injection ? `ODRÉ, points d'injection de biométhane (${fmtY(meta.injection.extraction)})` : null,
+          meta.cogen && loadedBases.includes('cogen') ? `ODRÉ, registre national des installations électriques, filière Bioénergies (au ${fmtY(meta.cogen.extraction)})` : null,
         ].filter(Boolean).join(' · ');
       }
     } catch (e) { /* meta.json absent : note de secours */ }

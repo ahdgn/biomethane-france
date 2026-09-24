@@ -97,7 +97,7 @@ const Filters = (() => {
 
     const container = document.getElementById('filter-site-type');
     container.innerHTML = allTypes.map(type => {
-      const diamond = type.startsWith('Cogénération') ? ' diamond' : '';
+      const diamond = type.startsWith('Élec.') ? ' diamond' : '';
       return `<label>
         <input type="checkbox" value="${escapeHtml(type)}" checked>
         <span class="type-dot${diamond}" style="background:${typeColor(type)}"></span>
@@ -442,7 +442,7 @@ const Filters = (() => {
       `${fmtNum(capInj, capInj >= 1000 ? 0 : 1)} <span class="kpi-sub">${CAP_UNITS.injection}</span>`, true));
     if (loadedBases.includes('cogen')) {
       const capCog = cog.reduce((s, d) => s + (d.capacite || 0), 0);
-      cards.push(kpi('Cogénérations',
+      cards.push(kpi('Élec. biogaz',
         `${fmtInt(cog.length)} <span class="kpi-sub">· ${fmtNum(capCog, 0)} ${CAP_UNITS.cogen}</span>`));
     } else {
       const open = filteredData.filter(d => d.ouvert).length;
