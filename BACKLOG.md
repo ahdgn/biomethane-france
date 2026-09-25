@@ -219,15 +219,28 @@ Assurance : moyenne-haute. Mécanique identique à l'outil allemand (validée le
 panneau), retirée avant commit. Le registre reste vide tant que l'équipe ne
 l'alimente pas.
 
-## Étape 9 — feat : enrichissement Pappers (étage 2)
+## Étape 9 — feat : enrichissement Pappers (étage 2) — préparation (PR #18)
 
-- [ ] Port de `etage2_succession.py` : SIREN, forme, dirigeants, âge, signal de
-      succession, résultat net ; ajout de la structure du capital (part
-      agricole) quand les bénéficiaires effectifs sont lisibles
-- [ ] Sur la shortlist v2 uniquement (quota API)
+- [x] `tools/enrich_pappers.py` : `targets` (liste des cibles, sans appel) et
+      `merge` (fusion des résultats dans les données de l'app, signal de
+      succession, lecture prudente du capital agricole, classeur
+      `Nautilus_Qualification_Sites_v2_Pappers_<date>.xlsx`). Aucun appel
+      Pappers dans le script : les appels passent par le connecteur en session,
+      après accord d'Ahmed sur le lot.
+- [x] Cibles (`tools/cache/pappers_targets.json`) : top 50 élec. ∪ top 30 zone
+      test ∪ top 50 injection = 112 sites ; 5 déjà résolus en juin 2026
+      (réutilisés) ; 107 à rechercher, dont 24 au nom masqué « Confidentiel »
+      (recherche par commune et code NAF, taux de résolution plus faible).
+- [ ] **Lot 1, sur accord** : 83 sites nommés × (recherche SIREN + dirigeants +
+      bénéficiaires effectifs) ≈ 250 appels. **Lot 2, optionnel** : 24 sites
+      masqués ≈ 70 appels.
+- [ ] Fusion, popup et colonnes (exploitant, dirigeants et âges, signal de
+      succession, capital agricole estimé), classeur pour AdlF.
 
 Assurance : moyenne. Fiabilité du rapprochement nom de site → SIREN notée
-HAUTE / MOYENNE / FAIBLE, à revoir manuellement sur la shortlist.
+HAUTE / MOYENNE / FAIBLE / NON RESOLU, à revoir manuellement sur la shortlist ;
+la lecture du capital agricole depuis les bénéficiaires effectifs est un
+indice, pas une preuve (statuts et registre des intrants font foi).
 
 ## Étape 10 — feat : géocodage ICPE, régime, recalcul des distances (PR #22)
 
