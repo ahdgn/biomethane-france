@@ -5,7 +5,7 @@
    ============================================ */
 
 const MapView = (() => {
-  const { PALETTE, fmtNum, fmtDate, escapeHtml, typeColor, CAP_UNITS } = CONFIG;
+  const { PALETTE, fmtNum, fmtDate, escapeHtml, typeColor, CAP_UNITS, isMobile } = CONFIG;
 
   const FRANCE_BOUNDS = L.latLngBounds([41.2, -5.5], [51.3, 9.8]);
 
@@ -13,10 +13,11 @@ const MapView = (() => {
   let clusterGroup;
   let legendDiv;
   // légende repliée par défaut sur petit écran (elle couvrirait la carte)
-  let legendCollapsed = window.matchMedia('(max-width: 860px)').matches;
+  let legendCollapsed = isMobile();
   const markers = new Map(); // id -> marker
   const dataById = new Map(); // id -> site (lien rayon des popups)
   let radiusCircle = null;
+  let sheet = null; // feuille basse mobile (remplace la popup Leaflet sur petit écran)
 
   function init() {
     map = L.map('map', {
@@ -87,38 +88,64 @@ const MapView = (() => {
 
     addLegend();
 
-    // Liens des popups : « 50 km autour » -> filtre rayon ; « Qualifier » -> panneau registre
-    map.on('popupopen', (e) => {
-      const el = e.popup.getElement();
-      const a = el.querySelector('a[data-radius-id]');
-      if (a) a.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        const d = dataById.get(a.dataset.radiusId);
-        if (d) Filters.setRadius(d.lat, d.lon, 50, d.nom);
-        map.closePopup();
-      });
-      const q = el.querySelector('a[data-qualify-id]');
-      if (q) q.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        const d = dataById.get(q.dataset.qualifyId);
-        if (d) Qualify.open(d, 'qualify');
-        map.closePopup();
-      });
-      const fi = el.querySelector('a[data-fiche-id]');
-      if (fi) fi.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        const d = dataById.get(fi.dataset.ficheId);
-        if (d) Qualify.open(d, 'fiche');
-        map.closePopup();
-      });
-    });
+    // Liens d'action des popups (desktop) ; la feuille mobile passe par le même câblage
+    map.on('popupopen', (e) => bindActions(e.popup.getElement()));
+    // un clic sur la carte referme la feuille mobile, comme il referme une popup
+    map.on('click', closeSheet);
 
     // vue d'entrée : la France entière, quelle que soit la taille de l'écran
     fitFrance();
   }
 
-  function fitFrance() {
-    if (map) map.fitBounds(FRANCE_BOUNDS, { padding: [10, 10] });
+  /* ---- Actions d'une fiche (popup, feuille mobile, panneau latéral) ----
+     « Rayon » -> filtre rayon ; « Qualifier » / « Fiche » -> panneau registre */
+  function bindActions(root) {
+    if (!root) return;
+    const wire = (attr, fn) => root.querySelectorAll(`a[${attr}]`).forEach(a => {
+      a.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const d = dataById.get(a.getAttribute(attr));
+        closeAny();
+        if (d) fn(d);
+      });
+    });
+    wire('data-radius-id', (d) => Filters.setRadius(d.lat, d.lon, 50, d.nom));
+    wire('data-qualify-id', (d) => Qualify.open(d, 'qualify'));
+    wire('data-fiche-id', (d) => Qualify.open(d, 'fiche'));
+  }
+  function closeAny() { if (map) map.closePopup(); closeSheet(); }
+
+  /* ---- Feuille basse mobile ----
+     Une popup Leaflet vit dans un calque transformé (translate3d) : un
+     position:fixed y est calculé par rapport au calque, pas à la fenêtre, et
+     la popup sortait de l'écran. Sur petit écran, le résumé du site est donc
+     rendu dans un élément du body, au-dessus du panneau bas. */
+  function openSheet(d) {
+    if (!sheet) {
+      sheet = document.createElement('div');
+      sheet.className = 'site-sheet';
+      sheet.setAttribute('role', 'dialog');
+      sheet.setAttribute('aria-label', 'Résumé du site');
+      sheet.innerHTML = '<button class="site-sheet-close" aria-label="Fermer">✕</button><div class="site-sheet-body"></div>';
+      sheet.querySelector('.site-sheet-close').addEventListener('click', closeSheet);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
+      document.body.appendChild(sheet);
+    }
+    const body = sheet.querySelector('.site-sheet-body');
+    body.innerHTML = popupHtml(d);
+    bindActions(body);
+    sheet.hidden = false;
+  }
+  function closeSheet() {
+    if (sheet) sheet.hidden = true;
+  }
+  // ouvre le résumé du site : feuille basse sur mobile, popup Leaflet sinon
+  function openSummary(marker, d) {
+    if (isMobile()) openSheet(d); else marker.openPopup();
+  }
+
+  function fitFrance(animate = true) {
+    if (map) map.fitBounds(FRANCE_BOUNDS, { padding: [10, 10], animate });
   }
 
   /* Cercle du filtre rayon : dessiné / retiré par Filters via showRadius /
@@ -249,7 +276,7 @@ const MapView = (() => {
     const isE = d.base === 'cogen';
     const e = (v) => escapeHtml(String(v == null ? '' : v));
     const identite = [
-      ['Clé registre', e(d.id.replace(/^(cog|inj)-/, ''))],
+      ['Clé registre', e(d.key)],
       ['Type', e(d.type)],
       isE ? ['Puissance', d.puissanceKw ? `${fmtNum(d.puissanceKw, 0)} kWé` : ''] : null,
       ['Capacité', `${fmtNum(d.capacite, 2)} ${unit}`],
@@ -317,7 +344,10 @@ const MapView = (() => {
         title: d.nom,
         alt: d.nom,
       });
-      marker.bindPopup(popupHtml(d), { maxWidth: 340, minWidth: 260 });
+      // sur mobile la popup est remplacée par la feuille basse ; sinon contenu
+      // construit à l'ouverture seulement (2 000 marqueurs rebâtis à chaque filtre)
+      if (isMobile()) marker.on('click', () => openSheet(d));
+      else marker.bindPopup(() => popupHtml(d), { maxWidth: 340, minWidth: 260 });
       layer.push(marker);
       markers.set(d.id, marker);
     });
@@ -327,11 +357,11 @@ const MapView = (() => {
     updateLegend(data);
   }
 
-  function focusOn(id) {
+  function focusOn(id, animate = true) {
     const marker = markers.get(id);
     if (!marker) return;
-    map.setView(marker.getLatLng(), Math.max(map.getZoom(), 12), { animate: true });
-    clusterGroup.zoomToShowLayer(marker, () => marker.openPopup());
+    map.setView(marker.getLatLng(), Math.max(map.getZoom(), 12), { animate });
+    clusterGroup.zoomToShowLayer(marker, () => openSummary(marker, dataById.get(id)));
   }
 
   /* ---- Légende dynamique : types présents + effectifs, cliquable ---- */
@@ -401,5 +431,6 @@ const MapView = (() => {
   }
 
   // popupHtml exposé : réutilisé pour la fiche site (one-pager) et les tests
-  return { init, update, focusOn, invalidateSize, fitFrance, showRadius, hideRadius, popupHtml, detailHtml };
+  return { init, update, focusOn, invalidateSize, fitFrance, showRadius, hideRadius, popupHtml, detailHtml,
+           bindActions, closeSheet };
 })();
