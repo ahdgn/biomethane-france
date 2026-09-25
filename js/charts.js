@@ -7,11 +7,16 @@
 const Charts = (() => {
   const { PALETTE, fmtInt, fmtNum, typeColor, CAP_UNITS, YEAR_FLOOR, YEAR_FLOOR_LABEL } = CONFIG;
 
-  let chartTimeline, chartTypes, chartRegions, chartDepartments;
+  let chartTimeline, chartTypes, chartRegions, chartEcheances, chartPriorites;
   let lastData = [];
   const timelineOpts = { metric: 'sites', cumul: false };
 
   const GRID = 'rgba(30, 66, 96, 0.08)';
+  // une couleur par base, la même dans tous les graphiques empilés
+  const BASE_STYLE = {
+    injection: { label: 'Injection', color: PALETTE.teal },
+    cogen: { label: 'Élec. biogaz', color: PALETTE.navy },
+  };
 
   const baseOptions = () => ({
     responsive: true,
@@ -88,10 +93,16 @@ const Charts = (() => {
       options: horizontalBarOptions('GWh/an', (ctx) => ` ${fmtNum(ctx.parsed.x, 1)} GWh/an`),
     });
 
-    chartDepartments = new Chart(document.getElementById('chart-departments'), {
+    chartEcheances = new Chart(document.getElementById('chart-echeances'), {
       type: 'bar',
       data: { labels: [], datasets: [] },
-      options: horizontalBarOptions('Nombre de sites', (ctx) => ` ${fmtInt(ctx.parsed.x)} sites`),
+      options: stackedBarOptions('Nombre de sites'),
+    });
+
+    chartPriorites = new Chart(document.getElementById('chart-priorites'), {
+      type: 'bar',
+      data: { labels: [], datasets: [] },
+      options: stackedBarOptions('Sites scorés'),
     });
 
     bindControls();
@@ -125,6 +136,34 @@ const Charts = (() => {
     };
   }
 
+  /* Barres horizontales empilées par base (injection / élec. biogaz), légende
+     affichée dès qu'il y a deux séries ; infobulle = valeur + part de la ligne */
+  function stackedBarOptions(xTitle) {
+    const o = horizontalBarOptions(xTitle, (ctx) => {
+      const row = ctx.chart.data.datasets.reduce((s, ds) => s + (ds.data[ctx.dataIndex] || 0), 0);
+      const pct = row ? ctx.parsed.x / row * 100 : 0;
+      return ` ${ctx.dataset.label} : ${fmtInt(ctx.parsed.x)} site${ctx.parsed.x > 1 ? 's' : ''} (${fmtNum(pct, 0)} %)`;
+    });
+    o.scales.x.stacked = true;
+    o.scales.y.stacked = true;
+    o.plugins.legend = { display: true, position: 'top', align: 'end',
+      labels: { usePointStyle: true, pointStyleWidth: 8, boxHeight: 6, padding: 10 } };
+    return o;
+  }
+
+  /* Jeux de données empilés : une série par base présente, dans l'ordre fixe
+     injection puis élec. biogaz (la couleur suit la base, jamais le rang) */
+  function stackedDatasets(data, labels, keyOf) {
+    const bases = Object.keys(BASE_STYLE).filter(b => data.some(d => d.base === b));
+    return bases.map(base => {
+      const by = Object.fromEntries(labels.map(l => [l, 0]));
+      data.filter(d => d.base === base).forEach(d => { const k = keyOf(d); if (k in by) by[k]++; });
+      return { label: BASE_STYLE[base].label, data: labels.map(l => by[l]),
+               backgroundColor: BASE_STYLE[base].color, borderRadius: 2, maxBarThickness: 18,
+               borderWidth: 1, borderColor: '#FFFFFF' };
+    });
+  }
+
   function bindControls() {
     document.getElementById('timeline-metric').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-metric]');
@@ -145,7 +184,8 @@ const Charts = (() => {
     updateTimeline(data);
     updateTypes(data);
     updateRegions(data);
-    updateDepartments(data);
+    updateEcheances(data);
+    updatePriorites(data);
   }
 
   function setEmpty(canvasId, empty) {
@@ -172,11 +212,6 @@ const Charts = (() => {
     const bucketOf = (y) => (y < YEAR_FLOOR ? YEAR_FLOOR_LABEL : y);
 
     const metricOf = (d) => timelineOpts.metric === 'sites' ? 1 : (d.capacite || 0);
-
-    const BASE_STYLE = {
-      injection: { label: 'Injection', color: PALETTE.teal },
-      cogen: { label: 'Élec. biogaz', color: PALETTE.navy },
-    };
 
     const datasets = bases.map(base => {
       const byYear = Object.fromEntries(labels.map(y => [y, 0]));
@@ -251,28 +286,32 @@ const Charts = (() => {
     chartRegions.update('none');
   }
 
-  /* ---- Top 10 départements ---- */
-  function updateDepartments(data) {
-    setEmpty('chart-departments', data.length === 0);
-    const byDept = {};
-    data.forEach(d => {
-      const dept = d.departement || 'Inconnu';
-      byDept[dept] = (byDept[dept] || 0) + 1;
-    });
-    const sorted = Object.entries(byDept).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  /* ---- Échéances de contrat estimées par tranche (les deux bases) ---- */
+  function updateEcheances(data) {
+    const withE = data.filter(d => d.echeanceTranche);
+    setEmpty('chart-echeances', withE.length === 0);
+    const tranches = CONFIG.PARAMS.cogen.echeance_tranches;
+    const labels = tranches.map(t => t.label);
+    const labelOf = Object.fromEntries(tranches.map(t => [t.key, t.label]));
+    chartEcheances.data.labels = labels;
+    chartEcheances.data.datasets = stackedDatasets(withE, labels, d => labelOf[d.echeanceTranche]);
+    chartEcheances.options.plugins.legend.display = chartEcheances.data.datasets.length > 1;
+    chartEcheances.update('none');
+  }
 
-    chartDepartments.data.labels = sorted.map(([k]) => k);
-    chartDepartments.data.datasets = [{
-      data: sorted.map(([, v]) => v),
-      backgroundColor: PALETTE.lightBlue,
-      borderRadius: 2,
-      maxBarThickness: 18,
-    }];
-    chartDepartments.update('none');
+  /* ---- Priorités du score v2 (sites scorés seulement) ---- */
+  function updatePriorites(data) {
+    const scored = data.filter(d => d.priorite);
+    setEmpty('chart-priorites', scored.length === 0);
+    const labels = ['A', 'B', 'C', 'D'];
+    chartPriorites.data.labels = labels;
+    chartPriorites.data.datasets = stackedDatasets(scored, labels, d => d.priorite);
+    chartPriorites.options.plugins.legend.display = chartPriorites.data.datasets.length > 1;
+    chartPriorites.update('none');
   }
 
   function resize() {
-    [chartTimeline, chartTypes, chartRegions, chartDepartments].forEach(c => c && c.resize());
+    [chartTimeline, chartTypes, chartRegions, chartEcheances, chartPriorites].forEach(c => c && c.resize());
   }
 
   return { init, update, resize };

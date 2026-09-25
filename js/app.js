@@ -84,6 +84,7 @@
       MapView.update(filtered);
       Charts.update(filtered);
       DataTable.update(filtered);
+      Qualify.updateNav(); // position « n / N » de la fiche ouverte
     });
 
     const filtered = Filters.getFiltered();

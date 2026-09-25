@@ -125,8 +125,7 @@ const DataTable = (() => {
       `;
 
       tr.addEventListener('click', () => {
-        document.querySelectorAll('#data-table tbody tr').forEach(r => r.classList.remove('highlighted'));
-        tr.classList.add('highlighted');
+        highlight(d.id);
         MapView.focusOn(d.id);
       });
 
@@ -134,6 +133,9 @@ const DataTable = (() => {
     });
 
     renderPagination(totalPages);
+    // la fiche ouverte reste surlignée après un nouveau rendu
+    const site = Filters.getState().site;
+    if (site) highlight(site);
   }
 
   function sortData(data) {
@@ -271,5 +273,13 @@ const DataTable = (() => {
     URL.revokeObjectURL(url);
   }
 
-  return { init, update };
+  // liste filtrée dans l'ordre du tableau (navigation précédent / suivant de la fiche)
+  function getSorted() { return sortData(currentData); }
+
+  // surligne la ligne d'un site si elle est affichée
+  function highlight(id) {
+    document.querySelectorAll('#data-table tbody tr').forEach(r => r.classList.toggle('highlighted', r.dataset.id === id));
+  }
+
+  return { init, update, getSorted, highlight };
 })();

@@ -299,6 +299,43 @@ erreur console. Suite proposée (palier 2) : présélections « Vue screening »
 carte sans clustering sous ~400 sites, KPI orientés screening, iframe Airtable
 chargée seulement en mode Qualifier.
 
+## Étape 12 — UX palier 2 : présélections, filtres regroupés, carte et fiche au service du tri
+
+Suite de l'audit du 25/09/2026. Réorganisation de l'existant, sans nouvelle
+donnée ni nouvelle règle.
+
+- [x] **Présélections** en tête de la barre : « Vue screening » (prospection),
+      « Shortlist zone test » (prospection + zone + A), « Élec. ≤ 5 km du
+      réseau » (prospection + base élec. + ≤ 5 km). Un clic au lieu de cinq ;
+      second clic = retour à l'état neutre ; l'URL reste le partage.
+- [x] **Filtres regroupés** en quatre sections : Périmètre et priorité,
+      Géographie, Élec. biogaz seulement, Avancé (repliée, dépliée si un lien
+      y met un filtre). Un filtre élec. actif avec l'injection affichée
+      déclenche un avis et un lien « n'afficher que l'élec. biogaz »
+      (fin des « 1 071 sites » pour « ≥ 1 MWé »). Barre : 1 566 → 1 263 px.
+- [x] **Carte** : sous 400 sites positionnés, plus de clustering (chaque site
+      de la shortlist visible au zoom national) ; couleur des marqueurs par
+      priorité du score dès que la prospection est active (échelle une teinte
+      navy → teal → bleu clair, gris D, hors périmètre estompé ; palette
+      validée pour la vision des couleurs), bascule Type / Priorité dans la
+      légende ; taille des losanges élec. en kWé (GWh à pleine charge) et non
+      plus en GWh électriques injectés.
+- [x] **KPI screening** quand la prospection est active : sites du périmètre,
+      priorité A (· B), élec. ≤ 5 km du réseau, au pipeline (· évalués).
+- [x] **Fiche** : iframe Airtable chargée seulement en mode Qualifier (bouton
+      « ✎ Qualifier ce site » en lecture) ; la colonne principale se resserre
+      au lieu d'être recouverte, le tableau reste visible ; navigation
+      précédent / suivant (et flèches clavier) dans la liste filtrée, ligne
+      surlignée, carte recentrée sans popup.
+- [x] **Analyse** : « Échéances de contrat estimées » (par tranche, empilé par
+      base) et « Priorités du score v2 » remplacent le top 10 départements.
+
+Assurance : élevée. Vérification Playwright : 34 contrôles palier 2 + 30
+contrôles palier 1 (régression), desktop, portable, mobile, lien partagé ;
+aucune erreur console ; comptages inchangés. Palier 3 (si l'usage le
+justifie) : registre déclaratif des filtres, test de fumée en CI, données
+allégées, mode terrain mobile.
+
 ## Coûts et appels d'API
 
 Règle : aucun appel payant sans accord préalable d'Ahmed, avec le nombre

@@ -31,6 +31,19 @@ const Filters = (() => {
   const RADIUS_MIN = 5, RADIUS_MAX = 150;
   const POWER_VALUES = ['250', '500', '1000'];
 
+  /* Présélections : chaque preset est un jeu de valeurs d'état appliqué sur
+     des filtres remis à zéro. Un preset est « actif » quand l'état lui
+     correspond exactement (ni plus ni moins de filtres). */
+  const PRESETS = {
+    screening: { prospection: true },
+    zonetest: { prospection: true, zone: true, prio: 'A' },
+    elec5km: { prospection: true, base: 'cogen', grid: '5' },
+  };
+  // filtres qui ne concernent que l'électricité biogaz
+  const ELEC_ONLY = ['power', 'grid', 'cpb'];
+  // filtres rangés dans la section « Avancé » (dépliée si l'un d'eux est actif)
+  const ADVANCED = ['base', 'operator', 'status'];
+
   const bounds = { yearMin: null, yearMax: null, hasPre: false };
   let allData = [];
   let filteredData = [];
@@ -48,6 +61,10 @@ const Filters = (() => {
     restoreFromURL();
     bindEvents();
     syncControls();
+    // section Avancé dépliée seulement si un lien partagé y a mis un filtre
+    document.getElementById('filter-advanced').open = ADVANCED.some(k => state[k])
+      || state.types.size !== allTypes.length
+      || state.yearMin !== bounds.yearMin || state.yearMax !== bounds.yearMax;
     applyFilters();
     if (state.radius) {
       updateRadiusUI();
@@ -361,6 +378,20 @@ const Filters = (() => {
     });
     document.getElementById('radius-clear').addEventListener('click', clearRadius);
 
+    // Présélections
+    document.getElementById('presets').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-preset]');
+      if (!btn) return;
+      applyPreset(btn.dataset.preset);
+    });
+    // Filtres élec. biogaz actifs avec l'injection affichée : bascule sur la base élec.
+    document.getElementById('elec-only').addEventListener('click', () => {
+      if (!loadedBases.includes('cogen')) return;
+      state.base = 'cogen';
+      syncSegmented('filter-base', 'base', state.base);
+      applyFilters();
+    });
+
     // Réinitialisation
     document.getElementById('btn-reset').addEventListener('click', resetFilters);
     const mapReset = document.getElementById('map-empty-reset');
@@ -422,6 +453,33 @@ const Filters = (() => {
     syncSegmented('filter-power', 'power', state.power);
     if (loadedBases.length > 1) syncSegmented('filter-base', 'base', state.base);
     updateYearUI();
+  }
+
+  /* ---------------- présélections ---------------- */
+
+  function applyPreset(name) {
+    const preset = PRESETS[name];
+    if (!preset) return;
+    // même preset déjà actif : second clic = retour à l'état neutre
+    const again = presetActive(name);
+    clearState();
+    if (!again) Object.entries(preset).forEach(([k, v]) => {
+      if (k === 'base' && !loadedBases.includes(v)) return;
+      state[k] = v;
+    });
+    syncControls();
+    applyFilters();
+  }
+
+  function presetActive(name) {
+    const preset = PRESETS[name];
+    const keys = Object.keys(preset).filter(k => k !== 'base' || loadedBases.includes(preset[k]));
+    return keys.every(k => state[k] === preset[k]) && activeFilterCount() === keys.length;
+  }
+
+  function syncPresets() {
+    document.querySelectorAll('#presets [data-preset]').forEach(b =>
+      b.setAttribute('aria-pressed', String(presetActive(b.dataset.preset))));
   }
 
   function activeFilterCount() {
@@ -502,6 +560,10 @@ const Filters = (() => {
     const resetBtn = document.getElementById('btn-reset');
     resetBtn.hidden = n === 0;
     document.getElementById('reset-count').textContent = n;
+    syncPresets();
+    // un filtre élec. biogaz est actif alors que l'injection reste affichée
+    document.getElementById('elec-notice').hidden =
+      !(ELEC_ONLY.some(k => state[k]) && state.base !== 'cogen' && loadedBases.includes('cogen'));
 
     updateKPIs();
     writeURL();
@@ -519,6 +581,31 @@ const Filters = (() => {
     const totalShown = allData.filter(d => !state.base || d.base === state.base).length;
 
     const cards = [];
+    if (state.prospection) {
+      // mode screening : les indicateurs du tri, pas ceux du parc national
+      const perimetre = allData.filter(d => (!state.base || d.base === state.base) && prospection2(d)).length;
+      const nA = filteredData.filter(d => d.priorite === 'A').length;
+      const nB = filteredData.filter(d => d.priorite === 'B').length;
+      const maxKm = CONFIG.PARAMS.reseau.distance_km.max;
+      const near = cog.filter(d => d.distGrdf != null && d.distGrdf <= maxKm).length;
+      const inPipe = filteredData.filter(d => d.inPipeline).length;
+      const evaluated = filteredData.filter(d => d.evalStatus && d.evalStatus !== 'unknown').length;
+      cards.push(kpi('Sites du périmètre',
+        `${fmtInt(filteredData.length)} <span class="kpi-sub">/ ${fmtInt(perimetre)}</span>`));
+      cards.push(kpi('Priorité A',
+        `${fmtInt(nA)} <span class="kpi-sub">· B ${fmtInt(nB)}</span>`, true));
+      if (loadedBases.includes('cogen')) {
+        cards.push(kpi(`Élec. ≤ ${maxKm} km du réseau`,
+          `${fmtInt(near)} <span class="kpi-sub">/ ${fmtInt(cog.length)} élec.</span>`));
+      } else {
+        cards.push(kpi(`Capacité d'injection`,
+          `${fmtNum(capInj, capInj >= 1000 ? 0 : 1)} <span class="kpi-sub">${CAP_UNITS.injection}</span>`));
+      }
+      cards.push(kpi('Au pipeline Nautilus',
+        `${fmtInt(inPipe)} <span class="kpi-sub">· ${fmtInt(evaluated)} évalué${evaluated > 1 ? 's' : ''}</span>`));
+      strip.innerHTML = cards.join('');
+      return;
+    }
     cards.push(kpi('Sites affichés',
       `${fmtInt(filteredData.length)} <span class="kpi-sub">/ ${fmtInt(totalShown)}</span>`));
     cards.push(kpi(`Capacité d'injection`,
@@ -546,7 +633,8 @@ const Filters = (() => {
 
   /* ---------------- reset ---------------- */
 
-  function resetFilters() {
+  // remet tous les filtres à zéro (le site ouvert dans la fiche n'est pas un filtre)
+  function clearState() {
     state.base = '';
     state.search = '';
     state.region = '';
@@ -567,6 +655,10 @@ const Filters = (() => {
     state.types = new Set(allTypes);
     state.yearMin = bounds.yearMin;
     state.yearMax = bounds.yearMax;
+  }
+
+  function resetFilters() {
+    clearState();
     syncControls();
     applyFilters();
   }
@@ -617,5 +709,6 @@ const Filters = (() => {
   function getFiltered() { return filteredData; }
   function getState() { return state; }
 
-  return { init, onChange, getFiltered, getState, toggleType, resetFilters, setRadius, clearRadius, setSite };
+  return { init, onChange, getFiltered, getState, toggleType, resetFilters, setRadius, clearRadius, setSite,
+           applyPreset };
 })();
