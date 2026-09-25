@@ -35,6 +35,21 @@ puis ouvrir <http://localhost:8000>.
 | `tools/geocode_icpe.py` | Position réelle et régime ICPE (Géorisques, rubrique 2781) ; `--restore` remet le centroïde de commune |
 | `tools/check_geo.py` | Contrôle géométrique : chaque site testé contre les contours des régions (`tools/geo/regions.geo.json`) ; `--apply` corrige la région ou retire des coordonnées hors de France |
 
+## Tests
+
+Un test de fumée (`tests/smoke.js`, Playwright + Chromium) charge l'application,
+vérifie que les comptages affichés sont ceux de `data/*.json` (total, périmètre
+prospection v2 = sites scorés, priorité A, base élec.), puis rejoue les gestes
+du quotidien : présélection, tri par score, popup depuis le tableau, fiche et
+lien direct, navigation, export CSV, feuille mobile. Aucune erreur console
+tolérée (fonds de carte et Airtable exclus). Il tourne dans GitHub Actions à
+chaque PR (`.github/workflows/smoke.yml`, environ une minute).
+
+```bash
+npm ci && npx playwright install --with-deps chromium   # une fois
+npm test
+```
+
 ## Mettre à jour les données
 
 ```bash
