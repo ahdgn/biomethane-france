@@ -1,0 +1,11 @@
+{
+  "name": "biomethane-france",
+  "private": true,
+  "description": "Portail de suivi biométhane France : application statique, sans build. Le paquet ne sert qu'au test de fumée (tests/smoke.js).",
+  "scripts": {
+    "test": "node tests/smoke.js"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

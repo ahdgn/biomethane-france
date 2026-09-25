@@ -336,6 +336,32 @@ aucune erreur console ; comptages inchangés. Palier 3 (si l'usage le
 justifie) : registre déclaratif des filtres, test de fumée en CI, données
 allégées, mode terrain mobile.
 
+## Étape 13 — chore : test de fumée en CI (palier 3, point 14 de l'audit)
+
+- [x] `tests/smoke.js` (Playwright + Chromium, serveur statique intégré) :
+      18 contrôles en une minute. Les comptages attendus sont lus dans
+      `data/*.json`, jamais recopiés : total, périmètre prospection v2 = sites
+      scorés (invariant avec `tools/qualify_v2.py`), priorité A, base élec.
+      Gestes rejoués : présélection, tri par score, popup depuis le tableau,
+      fiche (sans iframe en lecture, `site=` dans l'URL), navigation, onglet
+      Analyse sans graphique vide, export CSV (en-tête + une ligne par site,
+      BOM), lien direct, feuille mobile. Aucune erreur console tolérée.
+- [x] `.github/workflows/smoke.yml` : à chaque PR et sur `main`
+      (`npm ci`, Chromium, `npm test`). `package.json` + lockfile, Playwright
+      en dépendance de développement seulement : l'application reste sans build.
+- [x] README : section « Tests ».
+
+Assurance : très élevée. Aucun changement de comportement. Vérification :
+18/18 en local ; un contrôle en échec fait sortir le script en erreur (vu
+pendant l'écriture, sur un filtre replié).
+
+Points 15 et 16 de l'audit, parqués avec leur mesure :
+- Alléger les données : GitHub Pages compresse déjà ; élec. biogaz 133 kB
+  compressés aujourd'hui, 108 kB une fois les champs inutilisés retirés.
+  Un quart de seconde sur une connexion moyenne : pas rentable.
+- Mode terrain mobile (fiche plein écran, liste par distance à ma position) :
+  à décider quand l'équipe aura réellement utilisé le téléphone sur site.
+
 ## Coûts et appels d'API
 
 Règle : aucun appel payant sans accord préalable d'Ahmed, avec le nombre
