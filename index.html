@@ -10,7 +10,7 @@
   <!-- Librairies vendorisées (pas de CDN, pas de fonte externe) -->
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
-  <link rel="stylesheet" href="css/style.css?v=20260925-1">
+  <link rel="stylesheet" href="css/style.css?v=20260925-2">
 </head>
 <body>
 
@@ -43,6 +43,20 @@
         </button>
       </div>
 
+      <!-- Présélections : les vues du quotidien en un clic (js/filters.js PRESETS) -->
+      <div class="filter-group">
+        <span class="filter-label" id="label-presets">Présélections</span>
+        <div class="presets" id="presets" role="group" aria-labelledby="label-presets">
+          <button class="preset-btn" data-preset="screening" aria-pressed="false"
+                  title="Périmètre prospection v2, tableau trié par score">Vue screening</button>
+          <button class="preset-btn" data-preset="zonetest" aria-pressed="false"
+                  title="Périmètre prospection v2 · zone test · priorité A">Shortlist zone test</button>
+          <button class="preset-btn" data-preset="elec5km" aria-pressed="false"
+                  title="Élec. biogaz du périmètre à moins de 5 km du réseau GRDF">Élec. ≤ 5 km du réseau</button>
+        </div>
+      </div>
+
+      <h3 class="filter-section-title">Périmètre et priorité</h3>
       <!-- Filtre prospection v2 (périmètre thèse, 18/09/2026) -->
       <div class="filter-group prospection-group">
         <div class="prospection-row">
@@ -78,20 +92,6 @@
         </div>
       </div>
 
-      <!-- Registre équipe : statut de relation -->
-      <div class="filter-group">
-        <label class="filter-label" for="filter-eval">Statut de relation (registre équipe)</label>
-        <select id="filter-eval">
-          <option value="">Tous</option>
-          <option value="owners">Exploitant connu</option>
-          <option value="feedstock">Fournisseurs d'intrants à proximité</option>
-          <option value="evaluating">En cours d'évaluation</option>
-          <option value="rejected">Évalué et écarté</option>
-          <option value="unknown">Non évalué</option>
-        </select>
-        <span class="filter-hint">Saisi par l'équipe via « ✎ Qualifier » dans les fiches ; à jour à chaque synchronisation du registre.</span>
-      </div>
-
       <!-- Priorité du score v2 -->
       <div class="filter-group">
         <div class="filter-label-row">
@@ -115,34 +115,28 @@
         </div>
       </div>
 
-      <!-- Puissance électrique minimale (kWé) -->
+      <!-- Fenêtre de décision (échéance de contrat estimée) -->
       <div class="filter-group">
-        <span class="filter-label" id="label-power">Puissance élec. biogaz (kWé)</span>
-        <div class="segmented" id="filter-power" role="group" aria-labelledby="label-power">
-          <button class="seg-btn" data-power="" aria-pressed="true">Toutes</button>
-          <button class="seg-btn" data-power="250" aria-pressed="false">≥ 250</button>
-          <button class="seg-btn" data-power="500" aria-pressed="false">≥ 500</button>
-          <button class="seg-btn" data-power="1000" aria-pressed="false">≥ 1 000</button>
-        </div>
-        <span class="filter-hint">Plancher 250 · cible 500 · priorité 1 000 kWé. Sans effet sur les points d'injection.</span>
+        <span class="filter-label" id="label-window">Échéance de contrat estimée</span>
+        <div class="segmented" id="filter-window" role="group" aria-labelledby="label-window"></div>
+        <span class="filter-hint">Estimation : injection 15 ans · élec. biogaz 20 ans (contrats BG). Sites sans date de mise en service exclus quand une tranche est choisie.</span>
       </div>
 
-      <!-- Filtre rayon (activé depuis un popup carte) -->
-      <div class="filter-group" id="group-radius" hidden>
-        <span class="filter-label">Recherche par rayon</span>
-        <span class="filter-hint" id="radius-label"></span>
-        <input type="range" id="radius-km" class="radius-slider" min="5" max="150" step="5" value="50"
-               aria-label="Rayon en kilomètres">
-        <div class="dual-range-bounds" aria-hidden="true"><span>5 km</span><span>150 km</span></div>
-        <button class="btn-secondary" id="radius-clear">Retirer le rayon</button>
+      <!-- Registre équipe : statut de relation -->
+      <div class="filter-group">
+        <label class="filter-label" for="filter-eval">Statut de relation (registre équipe)</label>
+        <select id="filter-eval">
+          <option value="">Tous</option>
+          <option value="owners">Exploitant connu</option>
+          <option value="feedstock">Fournisseurs d'intrants à proximité</option>
+          <option value="evaluating">En cours d'évaluation</option>
+          <option value="rejected">Évalué et écarté</option>
+          <option value="unknown">Non évalué</option>
+        </select>
+        <span class="filter-hint">Saisi par l'équipe via « ✎ Qualifier » dans les fiches ; à jour à chaque synchronisation du registre.</span>
       </div>
 
-      <!-- Base (visible quand plusieurs jeux de données sont chargés) -->
-      <div class="filter-group" id="group-base" hidden>
-        <span class="filter-label" id="label-base">Base</span>
-        <div class="segmented" id="filter-base" role="group" aria-labelledby="label-base"></div>
-      </div>
-
+      <h3 class="filter-section-title">Géographie</h3>
       <!-- Recherche -->
       <div class="filter-group">
         <label class="filter-label" for="filter-search">Recherche</label>
@@ -159,35 +153,31 @@
         </select>
       </div>
 
-      <!-- Type de site -->
-      <div class="filter-group">
-        <div class="filter-label-row">
-          <span class="filter-label" id="label-types">Type de site</span>
-          <span class="filter-label-actions">
-            <button class="link-btn" id="types-all">tout</button>·<button class="link-btn" id="types-none">aucun</button>
-          </span>
-        </div>
-        <div id="filter-site-type" class="checkbox-group" role="group" aria-labelledby="label-types"></div>
+      <!-- Filtre rayon (activé depuis un popup carte) -->
+      <div class="filter-group" id="group-radius" hidden>
+        <span class="filter-label">Recherche par rayon</span>
+        <span class="filter-hint" id="radius-label"></span>
+        <input type="range" id="radius-km" class="radius-slider" min="5" max="150" step="5" value="50"
+               aria-label="Rayon en kilomètres">
+        <div class="dual-range-bounds" aria-hidden="true"><span>5 km</span><span>150 km</span></div>
+        <button class="btn-secondary" id="radius-clear">Retirer le rayon</button>
       </div>
 
-      <!-- Période de mise en service -->
-      <div class="filter-group">
-        <span class="filter-label" id="label-years">Mise en service&nbsp;: <strong id="year-range-label"></strong></span>
-        <div class="dual-range" id="year-range">
-          <div class="dual-range-track" aria-hidden="true"><div class="dual-range-fill" id="year-range-fill"></div></div>
-          <input type="range" id="filter-year-min" aria-label="Année de mise en service minimale">
-          <input type="range" id="filter-year-max" aria-label="Année de mise en service maximale">
-        </div>
-        <div class="dual-range-bounds" aria-hidden="true">
-          <span id="year-bound-min"></span><span id="year-bound-max"></span>
-        </div>
+      <h3 class="filter-section-title">Élec. biogaz seulement</h3>
+      <div class="filter-notice" id="elec-notice" hidden>
+        Ces filtres ne concernent que l'élec. biogaz : les points d'injection restent affichés.
+        <button class="link-btn" id="elec-only">N'afficher que l'élec. biogaz</button>
       </div>
-
-      <!-- Fenêtre de décision (échéance de contrat estimée) -->
+      <!-- Puissance électrique minimale (kWé) -->
       <div class="filter-group">
-        <span class="filter-label" id="label-window">Échéance de contrat estimée</span>
-        <div class="segmented" id="filter-window" role="group" aria-labelledby="label-window"></div>
-        <span class="filter-hint">Estimation : injection 15 ans · élec. biogaz 20 ans (contrats BG). Sites sans date de mise en service exclus quand une tranche est choisie.</span>
+        <span class="filter-label" id="label-power">Puissance élec. biogaz (kWé)</span>
+        <div class="segmented" id="filter-power" role="group" aria-labelledby="label-power">
+          <button class="seg-btn" data-power="" aria-pressed="true">Toutes</button>
+          <button class="seg-btn" data-power="250" aria-pressed="false">≥ 250</button>
+          <button class="seg-btn" data-power="500" aria-pressed="false">≥ 500</button>
+          <button class="seg-btn" data-power="1000" aria-pressed="false">≥ 1 000</button>
+        </div>
+        <span class="filter-hint">Plancher 250 · cible 500 · priorité 1 000 kWé. Sans effet sur les points d'injection.</span>
       </div>
 
       <!-- Distance au réseau GRDF (électricité biogaz) -->
@@ -215,6 +205,38 @@
         <span class="filter-hint">Arrêté du 26/12/2025 : 0,95 CPB/MWh si conversion entre 15 et 30 ans d'âge et première injection avant le 31/12/2029, sinon 0,8. Sans effet sur les points d'injection.</span>
       </div>
 
+      <details class="filter-advanced" id="filter-advanced">
+        <summary class="filter-section-title">Avancé</summary>
+      <!-- Base (visible quand plusieurs jeux de données sont chargés) -->
+      <div class="filter-group" id="group-base" hidden>
+        <span class="filter-label" id="label-base">Base</span>
+        <div class="segmented" id="filter-base" role="group" aria-labelledby="label-base"></div>
+      </div>
+
+      <!-- Type de site -->
+      <div class="filter-group">
+        <div class="filter-label-row">
+          <span class="filter-label" id="label-types">Type de site</span>
+          <span class="filter-label-actions">
+            <button class="link-btn" id="types-all">tout</button>·<button class="link-btn" id="types-none">aucun</button>
+          </span>
+        </div>
+        <div id="filter-site-type" class="checkbox-group" role="group" aria-labelledby="label-types"></div>
+      </div>
+
+      <!-- Période de mise en service -->
+      <div class="filter-group">
+        <span class="filter-label" id="label-years">Mise en service&nbsp;: <strong id="year-range-label"></strong></span>
+        <div class="dual-range" id="year-range">
+          <div class="dual-range-track" aria-hidden="true"><div class="dual-range-fill" id="year-range-fill"></div></div>
+          <input type="range" id="filter-year-min" aria-label="Année de mise en service minimale">
+          <input type="range" id="filter-year-max" aria-label="Année de mise en service maximale">
+        </div>
+        <div class="dual-range-bounds" aria-hidden="true">
+          <span id="year-bound-min"></span><span id="year-bound-max"></span>
+        </div>
+      </div>
+
       <!-- Opérateur réseau -->
       <div class="filter-group">
         <label class="filter-label" for="filter-operator">Opérateur réseau</label>
@@ -232,6 +254,7 @@
           <button class="seg-btn" data-status="closed" aria-pressed="false">Fermés</button>
         </div>
       </div>
+      </details>
     </aside>
 
     <!-- COLONNE PRINCIPALE -->
@@ -291,14 +314,19 @@
               <div class="chart-empty" hidden>Aucune donnée avec ces filtres</div>
             </div>
             <div class="chart-card">
+              <div class="chart-head"><h3 title="Échéance estimée : injection MES + 15 ans · élec. biogaz MES + 20 ans">Échéances de contrat estimées</h3></div>
+              <div class="chart-body"><canvas id="chart-echeances" aria-label="Graphique des sites par tranche d'échéance de contrat estimée"></canvas></div>
+              <div class="chart-empty" hidden>Aucune donnée avec ces filtres</div>
+            </div>
+            <div class="chart-card">
               <div class="chart-head"><h3 id="chart-regions-title">Capacité d'injection par région</h3></div>
               <div class="chart-body"><canvas id="chart-regions" aria-label="Graphique de la capacité par région"></canvas></div>
               <div class="chart-empty" hidden>Aucune donnée avec ces filtres</div>
             </div>
             <div class="chart-card">
-              <div class="chart-head"><h3>Top 10 départements — nombre de sites</h3></div>
-              <div class="chart-body"><canvas id="chart-departments" aria-label="Graphique des dix premiers départements par nombre de sites"></canvas></div>
-              <div class="chart-empty" hidden>Aucune donnée avec ces filtres</div>
+              <div class="chart-head"><h3 title="Sites du périmètre prospection v2 scorés, par priorité">Priorités du score v2</h3></div>
+              <div class="chart-body"><canvas id="chart-priorites" aria-label="Graphique des sites scorés par priorité"></canvas></div>
+              <div class="chart-empty" hidden>Aucun site scoré avec ces filtres</div>
             </div>
           </div>
         </div>
@@ -356,12 +384,21 @@
     <div class="qualify-head">
       <h2 id="qualify-title">Fiche site</h2>
       <div class="qualify-head-actions">
+        <span class="qualify-nav" id="qualify-nav" hidden>
+          <button class="icon-btn" id="qualify-prev" aria-label="Site précédent de la liste" title="Site précédent (liste filtrée, ordre du tableau)">‹</button>
+          <span class="qualify-pos" id="qualify-pos"></span>
+          <button class="icon-btn" id="qualify-next" aria-label="Site suivant de la liste" title="Site suivant (liste filtrée, ordre du tableau)">›</button>
+        </span>
         <button class="link-btn" id="qualify-link" title="Copier un lien direct vers cette fiche (filtres inclus)">Copier le lien</button>
         <button class="icon-btn" id="qualify-close" aria-label="Fermer le panneau de qualification">✕</button>
       </div>
     </div>
     <div class="qualify-site" id="qualify-site"></div>
     <div class="qualify-form">
+      <div class="qualify-start" id="qualify-start" hidden>
+        <button class="btn-primary" id="qualify-start-btn">✎ Qualifier ce site</button>
+        <span class="filter-hint">Ouvre le formulaire du registre équipe, pré-rempli.</span>
+      </div>
       <p class="qualify-noform" id="qualify-noform" hidden>
         Le formulaire du registre n'est pas encore branché : créer le formulaire
         partagé dans la base Airtable « Biomethane France Screening tool » et coller
@@ -385,12 +422,12 @@
   <script src="vendor/chartjs/chart.umd.min.js"></script>
 
   <!-- App -->
-  <script src="js/config.js?v=20260925-1"></script>
-  <script src="js/filters.js?v=20260925-1"></script>
-  <script src="js/map.js?v=20260925-1"></script>
-  <script src="js/charts.js?v=20260925-1"></script>
-  <script src="js/table.js?v=20260925-1"></script>
-  <script src="js/qualify.js?v=20260925-1"></script>
-  <script src="js/app.js?v=20260925-1"></script>
+  <script src="js/config.js?v=20260925-2"></script>
+  <script src="js/filters.js?v=20260925-2"></script>
+  <script src="js/map.js?v=20260925-2"></script>
+  <script src="js/charts.js?v=20260925-2"></script>
+  <script src="js/table.js?v=20260925-2"></script>
+  <script src="js/qualify.js?v=20260925-2"></script>
+  <script src="js/app.js?v=20260925-2"></script>
 </body>
 </html>

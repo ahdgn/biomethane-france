@@ -222,6 +222,59 @@ button { font-family: inherit; }
 
 .filter-group { display: flex; flex-direction: column; gap: 6px; }
 
+/* Sections de la barre de filtres */
+.filter-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--navy);
+  padding-top: 6px;
+  border-top: 1px solid var(--hairline-soft);
+  margin-bottom: -6px;
+}
+.filter-advanced summary.filter-section-title {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+.filter-advanced summary::-webkit-details-marker { display: none; }
+.filter-advanced summary::after { content: '▸'; color: var(--muted); font-size: 12px; transition: transform var(--transition); }
+.filter-advanced[open] summary::after { transform: rotate(90deg); }
+.filter-advanced { display: flex; flex-direction: column; gap: 16px; }
+.filter-advanced:not([open]) { gap: 0; }
+
+/* Présélections */
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.preset-btn {
+  padding: 6px 11px;
+  background: var(--panel);
+  border: 1px solid var(--teal);
+  border-radius: 16px;
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.preset-btn:hover { background: var(--teal-dim); }
+.preset-btn[aria-pressed="true"] { background: var(--teal); color: #fff; }
+
+/* Avis : filtres élec. biogaz actifs alors que l'injection reste affichée */
+.filter-notice {
+  padding: 7px 10px;
+  background: rgba(251, 174, 64, 0.14);
+  border: 1px solid rgba(251, 174, 64, 0.5);
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text);
+}
+.filter-notice .link-btn { font-size: 11.5px; font-weight: 500; }
+
 .filter-label {
   font-size: 12px;
   font-weight: 500;
@@ -610,6 +663,13 @@ button { font-family: inherit; }
 .qualify-head h2 { font-size: 14px; color: #1E4260; margin: 0; }
 .qualify-head-actions { display: flex; align-items: center; gap: 10px; }
 .qualify-head-actions .link-btn { font-size: 12px; white-space: nowrap; }
+.qualify-nav { display: inline-flex; align-items: center; gap: 2px; }
+.qualify-nav .icon-btn { width: 26px; height: 26px; font-size: 18px; line-height: 1; }
+.qualify-pos { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* mode lecture : la fiche prend toute la hauteur, un bouton lance la qualification */
+.qualify-drawer:not(.mode-qualify) .qualify-site { max-height: none; flex: 1; }
+.qualify-drawer:not(.mode-qualify) .qualify-form { flex: 0 0 auto; }
+.qualify-start { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; }
 .qualify-site {
   padding: 10px 14px;
   border-bottom: 1px solid #D5DCE4;
@@ -627,10 +687,12 @@ button { font-family: inherit; }
   color: #7F7F7F;
   border-top: 1px solid #D5DCE4;
 }
-/* le panneau bas ne sert pas pendant la qualification */
-body.qualify-open .bottom-panel { display: none; }
+/* la fiche pousse la colonne principale au lieu de la recouvrir : carte et
+   tableau restent lisibles et servent à naviguer de site en site */
+body.qualify-open .main-content { margin-right: 420px; }
 @media (max-width: 860px) {
   .qualify-drawer { width: 100vw; max-width: 100vw; top: 48px; bottom: 0; }
+  body.qualify-open .main-content { margin-right: 0; }
 }
 
 /* Curseur du filtre rayon */
@@ -803,6 +865,10 @@ body.qualify-open .bottom-panel { display: none; }
 .legend-item:hover { background: var(--teal-dim); }
 .legend-item .type-count { margin-left: auto; padding-left: 8px; }
 .legend-note { margin-top: 5px; color: var(--muted); font-size: 10.5px; }
+.legend-mode { margin: 2px 0 6px; }
+.legend-mode .seg-btn { padding: 2px 8px; font-size: 10.5px; }
+.legend-item.static { cursor: default; }
+.legend-item.static:hover { background: none; }
 
 /* ============ PANNEAU BAS ============ */
 .bottom-panel {

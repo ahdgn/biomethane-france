@@ -11,6 +11,7 @@ const MapView = (() => {
 
   let map;
   let clusterGroup;
+  let plainGroup; // marqueurs sans regroupement (petits effectifs)
   let legendDiv;
   // légende repliée par défaut sur petit écran (elle couvrirait la carte)
   let legendCollapsed = isMobile();
@@ -85,6 +86,7 @@ const MapView = (() => {
       },
     });
     map.addLayer(clusterGroup);
+    plainGroup = L.featureGroup().addTo(map);
 
     addLegend();
 
@@ -174,10 +176,42 @@ const MapView = (() => {
     if (!capacite || capacite <= 0) return 5;
     return Math.max(5, Math.min(13, 3.4 + Math.sqrt(capacite) * 1.15));
   }
+  /* Grandeur qui donne la taille : GWh/an pour l'injection ; pour l'élec.
+     biogaz, la puissance (le critère de screening) convertie en GWh à pleine
+     charge (kWé × 8 760 h), sinon les GWh électriques réellement injectés
+     rendaient tous les méthaniseurs minuscules. */
+  function sizeValue(d) {
+    if (d.base === 'cogen' && d.puissanceKw) return d.puissanceKw * 8.76 / 1000;
+    return d.capacite;
+  }
+
+  /* ---- Couleur des marqueurs : type de site, ou priorité du score ----
+     Mode « auto » : priorité dès que le filtre prospection est actif (c'est
+     l'information du screening), type sinon. La légende permet de forcer. */
+  let colorMode = null; // null = auto | 'type' | 'prio'
+  let lastData = [];
+  function effectiveMode() {
+    return colorMode || (Filters.getState().prospection ? 'prio' : 'type');
+  }
+  // échelle ordinale une teinte (navy → teal → bleu clair), gris pour D ;
+  // hors périmètre (non scoré) : gris clair estompé
+  const PRIO_COLORS = { A: PALETTE.deepNavy, B: PALETTE.teal, C: PALETTE.lightBlue, D: PALETTE.grey };
+  const PRIO_TEXT = { A: '#fff', B: '#fff', C: PALETTE.navy, D: '#fff' };
+  const PRIO_LABELS = { A: 'Priorité A', B: 'Priorité B', C: 'Priorité C', D: 'Priorité D', none: 'Hors périmètre (non scoré)' };
+  const UNSCORED_COLOR = PALETTE.hairline;
+  function markerColor(d) {
+    if (effectiveMode() !== 'prio') return typeColor(d.type);
+    return d.priorite ? PRIO_COLORS[d.priorite] : UNSCORED_COLOR;
+  }
+  function setColorMode(mode) {
+    colorMode = mode;
+    update(lastData);
+  }
 
   function createIcon(d) {
-    const color = typeColor(d.type);
-    const r = radiusFor(d.capacite);
+    const color = markerColor(d);
+    const faded = !d.ouvert || (effectiveMode() === 'prio' && !d.priorite);
+    const r = radiusFor(sizeValue(d));
     const size = r * 2;
     const isCogen = d.base === 'cogen';
     const shape = isCogen
@@ -191,7 +225,7 @@ const MapView = (() => {
       className: 'site-marker',
       html: `<div style="width:${size}px;height:${size}px;background:${color};${shape}
         ${ring}
-        ${d.ouvert ? '' : 'opacity:0.45;'}"></div>`,
+        ${faded ? 'opacity:0.45;' : ''}"></div>`,
       iconSize: [size, size],
       iconAnchor: [r, r],
       popupAnchor: [0, -r - 2],
@@ -199,13 +233,13 @@ const MapView = (() => {
   }
 
   /* ---- Aides d'affichage ---- */
-  const PRIO_COLORS = { A: PALETTE.sage, B: PALETTE.teal, C: PALETTE.amber, D: PALETTE.grey };
   function scoreBadge(d) {
     if (d.score == null) return '';
     const c = PRIO_COLORS[d.priorite] || PALETTE.grey;
+    const t = PRIO_TEXT[d.priorite] || '#fff';
     const det = d.scoreDetail
       ? Object.entries(d.scoreDetail).map(([k, v]) => `${CONFIG.SCORE_LABELS[k] || k} ${fmtNum(v, 0)}`).join(' · ') : '';
-    return `<span class="score-badge" style="background:${c}" title="${escapeHtml(det)}">${fmtNum(d.score, 0)} · ${escapeHtml(d.priorite)}</span>`;
+    return `<span class="score-badge" style="background:${c};color:${t}" title="${escapeHtml(det)}">${fmtNum(d.score, 0)} · ${escapeHtml(d.priorite)}</span>`;
   }
   /* Barre du score : un segment par critère, longueur = poids, remplissage = points obtenus */
   function scoreBar(d) {
@@ -330,8 +364,16 @@ const MapView = (() => {
       <div class="fiche-links">${liens.join('')}</div>`;
   }
 
+  /* Au-delà de CLUSTER_MIN sites positionnés, les marqueurs sont regroupés ;
+     en dessous (typiquement une shortlist), chaque site reste visible au zoom
+     national, avec sa couleur de priorité. */
+  const CLUSTER_MIN = 400;
+  let clustered = true;
+
   function update(data) {
+    lastData = data;
     clusterGroup.clearLayers();
+    plainGroup.clearLayers();
     markers.clear();
 
     dataById.clear();
@@ -351,17 +393,22 @@ const MapView = (() => {
       layer.push(marker);
       markers.set(d.id, marker);
     });
-    clusterGroup.addLayers(layer);
+    clustered = layer.length > CLUSTER_MIN;
+    if (clustered) clusterGroup.addLayers(layer);
+    else layer.forEach(m => plainGroup.addLayer(m));
 
     document.getElementById('map-empty').hidden = data.length > 0;
     updateLegend(data);
   }
 
-  function focusOn(id, animate = true) {
+  // centre la carte sur un site et ouvre son résumé (sauf summary = false)
+  function focusOn(id, animate = true, summary = true) {
     const marker = markers.get(id);
     if (!marker) return;
     map.setView(marker.getLatLng(), Math.max(map.getZoom(), 12), { animate });
-    clusterGroup.zoomToShowLayer(marker, () => openSummary(marker, dataById.get(id)));
+    const show = () => { if (summary) openSummary(marker, dataById.get(id)); };
+    if (clustered) clusterGroup.zoomToShowLayer(marker, show);
+    else show();
   }
 
   /* ---- Légende dynamique : types présents + effectifs, cliquable ---- */
@@ -379,26 +426,28 @@ const MapView = (() => {
 
   function updateLegend(data) {
     if (!legendDiv) return;
+    const mode = effectiveMode();
     const counts = {};
     let hasCogen = false, hasCommune = false;
     data.forEach(d => {
-      counts[d.type] = (counts[d.type] || 0) + 1;
+      const k = mode === 'prio' ? (d.priorite || 'none') : d.type;
+      counts[k] = (counts[k] || 0) + 1;
       if (d.base === 'cogen') hasCogen = true;
       if (d.geoPrecision === 'commune') hasCommune = true;
     });
-    const types = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    const keys = mode === 'prio'
+      ? ['A', 'B', 'C', 'D', 'none'].filter(k => counts[k])
+      : Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
 
-    if (!types.length) { legendDiv.innerHTML = ''; return; }
+    if (!keys.length) { legendDiv.innerHTML = ''; return; }
 
-    legendDiv.classList.toggle('collapsed', legendCollapsed);
-    legendDiv.innerHTML = `
-      <button class="map-legend-toggle" aria-expanded="${!legendCollapsed}"
-              aria-label="Afficher ou masquer la légende">
-        <span class="map-legend-title">Types de site</span>
-        <span class="chevron" aria-hidden="true">▼</span>
-      </button>
-      <div class="map-legend-body">
-      ${types.map(t => {
+    const items = mode === 'prio'
+      ? keys.map(k => `<div class="legend-item static">
+          <span class="type-dot" style="background:${k === 'none' ? UNSCORED_COLOR : PRIO_COLORS[k]}"></span>
+          <span class="type-name">${PRIO_LABELS[k]}</span>
+          <span class="type-count">${counts[k].toLocaleString('fr-FR')}</span>
+        </div>`)
+      : keys.map(t => {
         const diamond = t.startsWith('Élec.') ? ' diamond' : '';
         return `<div class="legend-item" data-type="${escapeHtml(t)}" role="button" tabindex="0"
              title="Cliquer pour masquer / afficher ce type">
@@ -406,9 +455,23 @@ const MapView = (() => {
           <span class="type-name">${escapeHtml(t)}</span>
           <span class="type-count">${counts[t].toLocaleString('fr-FR')}</span>
         </div>`;
-      }).join('')}
-      ${hasCogen && hasCommune ? '<div class="legend-note">◆ élec. biogaz — position à la commune</div>' : ''}
-      <div class="legend-note">Taille du point ∝ capacité</div>
+      });
+
+    legendDiv.classList.toggle('collapsed', legendCollapsed);
+    legendDiv.innerHTML = `
+      <button class="map-legend-toggle" aria-expanded="${!legendCollapsed}"
+              aria-label="Afficher ou masquer la légende">
+        <span class="map-legend-title">${mode === 'prio' ? 'Priorité du score' : 'Types de site'}</span>
+        <span class="chevron" aria-hidden="true">▼</span>
+      </button>
+      <div class="map-legend-body">
+      <div class="segmented segmented-sm legend-mode" role="group" aria-label="Couleur des marqueurs">
+        <button class="seg-btn" data-mode="type" aria-pressed="${mode === 'type'}">Type</button>
+        <button class="seg-btn" data-mode="prio" aria-pressed="${mode === 'prio'}">Priorité</button>
+      </div>
+      ${items.join('')}
+      ${hasCogen ? '<div class="legend-note">◆ élec. biogaz' + (hasCommune ? ' (position à la commune pour certains)' : '') + ' · ● injection</div>' : ''}
+      <div class="legend-note">Taille ∝ capacité (élec. : puissance)</div>
       </div>`;
 
     legendDiv.querySelector('.map-legend-toggle').addEventListener('click', () => {
@@ -416,8 +479,10 @@ const MapView = (() => {
       legendDiv.classList.toggle('collapsed', legendCollapsed);
       legendDiv.querySelector('.map-legend-toggle').setAttribute('aria-expanded', String(!legendCollapsed));
     });
+    legendDiv.querySelectorAll('.legend-mode [data-mode]').forEach(b =>
+      b.addEventListener('click', () => setColorMode(b.dataset.mode)));
 
-    legendDiv.querySelectorAll('.legend-item').forEach(el => {
+    legendDiv.querySelectorAll('.legend-item[data-type]').forEach(el => {
       const toggle = () => Filters.toggleType(el.dataset.type);
       el.addEventListener('click', toggle);
       el.addEventListener('keydown', (e) => {
@@ -432,5 +497,5 @@ const MapView = (() => {
 
   // popupHtml exposé : réutilisé pour la fiche site (one-pager) et les tests
   return { init, update, focusOn, invalidateSize, fitFrance, showRadius, hideRadius, popupHtml, detailHtml,
-           bindActions, closeSheet };
+           bindActions, closeSheet, setColorMode, PRIO_COLORS };
 })();
