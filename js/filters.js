@@ -26,6 +26,7 @@ const Filters = (() => {
     prio: '',           // '' | 'A' | 'AB' | 'ABC' : priorité du score v2 (sites scorés seulement)
     pipeline: false,    // sites du pipeline Nautilus uniquement (registre, projet renseigné)
     relation: '',       // '' | owners | feedstock | rejected | evaluating | unknown
+    site: null,         // id du site dont la fiche est ouverte (lien partageable, pas un filtre)
   };
   const RADIUS_MIN = 5, RADIUS_MAX = 150;
   const POWER_VALUES = ['250', '500', '1000'];
@@ -178,6 +179,7 @@ const Filters = (() => {
       const sel = allTypes.filter(t => wanted.has(t));
       if (sel.length) state.types = new Set(sel);
     }
+    if (p.has('site')) state.site = p.get('site');
   }
 
   function writeURL() {
@@ -200,6 +202,7 @@ const Filters = (() => {
     if (state.yearMin !== bounds.yearMin || state.yearMax !== bounds.yearMax)
       p.set('y', `${state.yearMin}-${state.yearMax}`);
     if (state.types.size !== allTypes.length) p.set('t', [...state.types].join('|'));
+    if (state.site) p.set('site', state.site);
     const s = p.toString();
     history.replaceState(null, '', s ? '#' + s : location.pathname + location.search);
   }
@@ -245,20 +248,24 @@ const Filters = (() => {
     document.getElementById('types-all').addEventListener('click', () => setAllTypes(true));
     document.getElementById('types-none').addEventListener('click', () => setAllTypes(false));
 
-    // Période — le curseur déplacé est borné par l'autre (jamais de croisement)
+    // Période — le curseur déplacé est borné par l'autre (jamais de croisement).
+    // Le libellé suit le geste, le filtrage (carte + graphiques + tableau,
+    // ~300 ms) est debounce comme pour le rayon.
     const yearMinInput = document.getElementById('filter-year-min');
     const yearMaxInput = document.getElementById('filter-year-max');
+    let yearTimeout;
+    const applyYearLater = () => { clearTimeout(yearTimeout); yearTimeout = setTimeout(applyFilters, 160); };
     yearMinInput.addEventListener('input', () => {
       state.yearMin = Math.min(parseInt(yearMinInput.value, 10), state.yearMax);
       yearMinInput.value = state.yearMin;
       updateYearUI();
-      applyFilters();
+      applyYearLater();
     });
     yearMaxInput.addEventListener('input', () => {
       state.yearMax = Math.max(parseInt(yearMaxInput.value, 10), state.yearMin);
       yearMaxInput.value = state.yearMax;
       updateYearUI();
-      applyFilters();
+      applyYearLater();
     });
 
     // Statut
@@ -288,12 +295,15 @@ const Filters = (() => {
       syncSegmented('filter-power', 'power', state.power);
       applyFilters();
     });
-    const infoBtn = document.getElementById('prospection-info-btn');
-    const infoPop = document.getElementById('prospection-info');
-    infoBtn.addEventListener('click', () => {
-      const open = infoPop.hidden;
-      infoPop.hidden = !open;
-      infoBtn.setAttribute('aria-expanded', String(open));
+    // Boutons ⓘ : chaque bouton déplie le bloc désigné par aria-controls
+    document.querySelectorAll('.info-btn[aria-controls]').forEach(btn => {
+      const pop = document.getElementById(btn.getAttribute('aria-controls'));
+      if (!pop) return;
+      btn.addEventListener('click', () => {
+        const open = pop.hidden;
+        pop.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+      });
     });
 
     // Fenêtre de décision (tranche d'échéance estimée)
@@ -441,6 +451,7 @@ const Filters = (() => {
   function applyFilters() {
     // curseur au minimum = borne « < 2000 » : aucune limite basse
     const yearMin = state.yearMin === bounds.yearMin ? -Infinity : state.yearMin;
+    const gridFar = Math.max(...CONFIG.PARAMS.reseau.distance_paliers_km);
 
     filteredData = allData.filter(d => {
       if (state.prospection && !prospection2(d)) return false;
@@ -453,8 +464,11 @@ const Filters = (() => {
       if (state.power && d.base === 'cogen' && (d.puissanceKw || 0) < Number(state.power)) return false;
       if (state.base && d.base !== state.base) return false;
       if (state.search) {
+        // nom, commune, département, ou clé registre (code EIC / id ODRÉ, celle du classeur Excel)
         const hit = (d.nom || '').toLowerCase().includes(state.search)
-          || (d.commune || '').toLowerCase().includes(state.search);
+          || (d.commune || '').toLowerCase().includes(state.search)
+          || (d.departement || '').toLowerCase().includes(state.search)
+          || (d.key || '').toLowerCase() === state.search;
         if (!hit) return false;
       }
       if (state.region && d.region !== state.region) return false;
@@ -471,7 +485,7 @@ const Filters = (() => {
       // distance au réseau GRDF : ne concerne que l'électricité biogaz (l'injection passe)
       if (state.grid && d.base === 'cogen') {
         const km = d.distGrdf;
-        if (state.grid === 'far') { if (km != null && km <= Math.max(...CONFIG.PARAMS.reseau.distance_paliers_km)) return false; }
+        if (state.grid === 'far') { if (km != null && km <= gridFar) return false; }
         else if (km == null || km > Number(state.grid)) return false;
       }
       // coefficient CPB : ne concerne que les cogés biogaz (l'injection passe)
@@ -593,9 +607,15 @@ const Filters = (() => {
     document.getElementById('radius-km').value = state.radius.km;
   }
 
+  // Site ouvert dans la fiche : écrit dans l'URL pour partager un lien direct
+  function setSite(id) {
+    state.site = id || null;
+    writeURL();
+  }
+
   function onChange(cb) { onChangeCallbacks.push(cb); }
   function getFiltered() { return filteredData; }
   function getState() { return state; }
 
-  return { init, onChange, getFiltered, getState, toggleType, resetFilters, setRadius, clearRadius };
+  return { init, onChange, getFiltered, getState, toggleType, resetFilters, setRadius, clearRadius, setSite };
 })();

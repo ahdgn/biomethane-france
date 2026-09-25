@@ -31,6 +31,7 @@
         if (!resp.ok) throw new Error(`${ds.url} : HTTP ${resp.status}`);
         const raw = await resp.json();
         const records = raw.map(ds.normalize).map(r => {
+          r.key = CONFIG.siteKey(r);   // clé registre : code EIC ou identifiant ODRÉ
           const e = CONFIG.echeance(r);
           r.echeanceAnnee = e.annee;
           r.echeanceHyp = e.hyp;
@@ -60,8 +61,7 @@
         const plEntries = await plResp.json();
         const bySite = Object.fromEntries(plEntries.map(e => [String(e.site), e]));
         allData.forEach(r => {
-          const raw = r.id.replace(/^(cog|inj)-/, '');
-          if (bySite[raw]) r.pipeline = bySite[raw];
+          if (bySite[r.key]) r.pipeline = bySite[r.key];
           // Dans le pipeline Nautilus = rattaché à un projet nommé ; une fiche
           // sans projet enrichit le site sans le mettre au pipe.
           r.inPipeline = !!(r.pipeline && r.pipeline.project);
@@ -117,7 +117,7 @@
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebar-toggle');
     const backdrop = document.getElementById('sidebar-backdrop');
-    const isMobile = () => window.matchMedia('(max-width: 860px)').matches;
+    const { isMobile } = CONFIG;
 
     function setSidebar(collapsed) {
       sidebar.classList.toggle('collapsed', collapsed);
@@ -167,8 +167,19 @@
     // hauteur mémorisée ignorée si inutilisable (< 120 px : panneau quasi fermé)
     const savedH = parseInt(localStorage.getItem('bmf-panel-h') || '', 10);
     panel.style.height = (savedH >= 120 ? savedH : defaultH()) + 'px';
-    // la carte vient de perdre la hauteur du panneau : on recadre sur la France
-    requestAnimationFrame(() => { MapView.invalidateSize(); MapView.fitFrance(); });
+    // la carte vient de perdre la hauteur du panneau : on recadre sur la France,
+    // puis on ouvre le site demandé par le lien (#…&site=<id>), s'il y en a un
+    requestAnimationFrame(() => {
+      MapView.invalidateSize();
+      MapView.fitFrance(false); // sans animation : un zoom sur le site peut suivre immédiatement
+      const wanted = Filters.getState().site;
+      const site = wanted && allData.find(d => d.id === wanted);
+      if (site) {
+        Qualify.open(site, 'fiche');
+        // le panneau redimensionne la carte (220 ms) : on zoome une fois la carte stable
+        setTimeout(() => MapView.focusOn(site.id, false), 300);
+      }
+    });
 
     function maxH() {
       return document.querySelector('.main-content').clientHeight - 160;
@@ -216,12 +227,15 @@
 
     /* ---- Redimensionnement fenêtre ---- */
     let resizeTimeout;
+    let wasMobile = isMobile();
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
         MapView.invalidateSize();
         Charts.resize();
         if (panel.offsetHeight > maxH()) setPanelHeight(maxH(), false);
+        // passage du seuil mobile : les marqueurs changent de mode (popup / feuille basse)
+        if (isMobile() !== wasMobile) { wasMobile = isMobile(); MapView.update(Filters.getFiltered()); }
       }, 120);
     });
 

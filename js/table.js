@@ -9,6 +9,7 @@ const DataTable = (() => {
   let currentData = [];
   let sortKey = 'capacite';
   let sortDir = 'desc';
+  let userSorted = false; // tant que l'utilisateur n'a pas choisi, le tri suit le mode (score en screening)
   let currentPage = 1;
   let pageSize = 25;
   let hasCogen = false;
@@ -42,6 +43,7 @@ const DataTable = (() => {
     document.querySelectorAll('#data-table th[data-sort]').forEach(th => {
       th.addEventListener('click', () => {
         const key = th.dataset.sort;
+        userSorted = true;
         if (sortKey === key) {
           sortDir = sortDir === 'asc' ? 'desc' : 'asc';
         } else {
@@ -66,6 +68,12 @@ const DataTable = (() => {
   function update(data) {
     currentData = data;
     currentPage = 1;
+    // tri par défaut : score en mode screening (filtre prospection), capacité sinon
+    if (!userSorted) {
+      sortKey = Filters.getState().prospection ? 'score' : 'capacite';
+      sortDir = 'desc';
+      updateSortUI();
+    }
     render();
   }
 
@@ -96,11 +104,14 @@ const DataTable = (() => {
       const baseCell = hasCogen
         ? `<td>${d.base === 'cogen' ? 'Élec. biogaz' : 'Injection'}</td>` : '';
 
+      // Score juste après le projet : c'est la colonne du screening, elle doit
+      // rester visible sans défilement horizontal
       tr.innerHTML = `
         ${baseCell}
         <td title="${escapeHtml(d.nom)}">${escapeHtml(d.nom || '—')}</td>
+        <td class="col-num" title="${d.scoreDetail ? escapeHtml(Object.entries(d.scoreDetail).map(([k, v]) => `${CONFIG.SCORE_LABELS[k] || k} ${v}`).join(' · ')) : 'hors périmètre prospection v2'}">${d.score != null ? `${fmtNum(d.score, 0)} <span class="kpi-sub">${escapeHtml(d.priorite || '')}</span>` : '—'}</td>
         <td>${escapeHtml(d.commune || '—')}</td>
-        <td>${escapeHtml(d.region || '—')}</td>
+        <td class="col-opt">${escapeHtml(d.region || '—')}</td>
         <td><span class="type-cell">
           <span class="type-dot${d.base === 'cogen' ? ' diamond' : ''}" style="background:${typeColor(d.type)}"></span>
           <span class="type-name" title="${escapeHtml(d.type)}">${escapeHtml(d.type || '—')}</span>
@@ -108,10 +119,9 @@ const DataTable = (() => {
         <td class="col-num" title="${unit}">${fmtNum(d.capacite, 2)}</td>
         <td>${fmtDate(d.dateMes)}</td>
         <td class="col-num" title="${escapeHtml(d.echeanceHyp || 'estimation non disponible')}">${d.echeanceAnnee != null ? d.echeanceAnnee : '—'}</td>
-        <td class="col-num" title="${d.scoreDetail ? escapeHtml(Object.entries(d.scoreDetail).map(([k, v]) => `${CONFIG.SCORE_LABELS[k] || k} ${v}`).join(' · ')) : 'hors périmètre prospection v2'}">${d.score != null ? `${fmtNum(d.score, 0)} <span class="kpi-sub">${escapeHtml(d.priorite || '')}</span>` : '—'}</td>
-        <td class="col-num" title="${d.base === 'cogen' ? (d.distGrdf != null ? 'distance au réseau GRDF en service, à vol d\'oiseau depuis le centroïde de commune' : 'au-delà de 15 km du réseau GRDF, ou zone desservie par une ELD') : 'élec. biogaz seulement'}">${d.distGrdf != null ? fmtNum(d.distGrdf, 1) : (d.base === 'cogen' ? '> 15' : '—')}</td>
+        <td class="col-num" title="${d.base === 'cogen' ? (d.distGrdf != null ? 'distance au réseau GRDF en service, à vol d\'oiseau depuis la position du site (ICPE ou centre de la commune)' : 'au-delà de 15 km du réseau GRDF, ou zone desservie par une ELD') : 'élec. biogaz seulement'}">${d.distGrdf != null ? fmtNum(d.distGrdf, 1) : (d.base === 'cogen' ? '> 15' : '—')}</td>
         <td class="col-num" title="${d.cpb ? escapeHtml(d.cpb.atteignable ? `0,95 atteignable de ${d.cpb.first} à ${d.cpb.last}` : `0,95 hors d'atteinte (âge ${d.cpb.ageConv} ans en ${d.cpb.conv})`) : 'méthanisation seulement'}">${d.cpbCoef != null ? fmtNum(d.cpbCoef, 2) : '—'}</td>
-        <td><span class="status-tag ${d.ouvert ? 'open' : 'closed'}">${d.ouvert ? 'Ouvert' : 'Fermé'}</span></td>
+        <td class="col-opt"><span class="status-tag ${d.ouvert ? 'open' : 'closed'}">${d.ouvert ? 'Ouvert' : 'Fermé'}</span></td>
       `;
 
       tr.addEventListener('click', () => {
@@ -206,7 +216,7 @@ const DataTable = (() => {
 
     const rows = currentData.map(d => [
       d.base === 'cogen' ? 'Élec. biogaz' : 'Injection',
-      d.id.replace(/^(cog|inj)-/, ''),
+      d.key,
       d.pipeline && d.pipeline.project ? d.pipeline.project : '',
       d.evalStatus && d.evalStatus !== 'unknown' ? (CONFIG.EVAL_LABELS[d.evalStatus] || d.evalStatus) : '',
       d.pipeline && d.pipeline.tags ? d.pipeline.tags.map(t => CONFIG.TAG_LABELS[t] || t).join(' · ') : '',

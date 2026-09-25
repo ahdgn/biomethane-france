@@ -189,6 +189,13 @@ const CONFIG = (() => {
 
   const typeColor = (type) => TYPE_COLORS[type] || TYPE_FALLBACK;
 
+  // Clé du registre équipe : code EIC (élec. biogaz) ou identifiant ODRÉ (injection)
+  const siteKey = (d) => d.id.replace(/^(cog|inj)-/, '');
+
+  // Point de rupture « petit écran » partagé par tous les modules
+  const MOBILE_QUERY = '(max-width: 860px)';
+  const isMobile = () => window.matchMedia(MOBILE_QUERY).matches;
+
   /* ---- Liens Google Maps ----
      Les installations électriques sont géocodées au centroïde de commune :
      un lien par coordonnées tombe au milieu du bourg. Google Maps connaît en
@@ -364,6 +371,6 @@ const CONFIG = (() => {
   return { PALETTE, TYPE_COLORS, TYPE_FALLBACK, DATASETS, CAP_UNITS, SOURCE_NOTE, SCORE_LABELS,
            EVAL_LABELS, TAG_LABELS, GRID_LABELS, REGISTER_FORM_URL,
            YEAR_FLOOR, YEAR_FLOOR_LABEL, PARAMS, setParams,
-           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, gmapsLinks, echeance, echeanceTranche, cpbInfo,
+           fmtInt, fmtNum, fmtDate, escapeHtml, typeColor, siteKey, isMobile, gmapsLinks, echeance, echeanceTranche, cpbInfo,
            prospection2, zoneTest };
 })();

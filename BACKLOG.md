@@ -265,6 +265,40 @@ cas majoritaire), moyenne sur les cas ambigus (confiance affichée), le régime
 suit le rapprochement. À contrôler sur la shortlist avec les liens Google Maps
 et la fiche Géorisques.
 
+## Étape 11 — UX palier 1 : correctifs et gestes du quotidien
+
+Audit du 25/09/2026 (code + mesures Playwright desktop / portable / mobile).
+Palier « le plus simple d'abord » : aucune refonte, aucune nouvelle donnée.
+
+- [x] **Popup mobile invisible** : la feuille basse était un `position: fixed`
+      dans un calque Leaflet transformé (calculée hors écran, rect top −396 px).
+      Le résumé du site est désormais rendu dans le body (`openSheet`, js/map.js),
+      au-dessus du panneau bas ; la popup Leaflet reste sur desktop.
+- [x] **Filtrage plus fluide** : curseurs d'année debounce (160 ms, comme le
+      rayon) et popups construites à l'ouverture (`bindPopup(fn)`). Mesures :
+      bascule prospection 240-570 ms → 65-130 ms ; 10 crans de curseur
+      2 775 ms → < 5 ms (le filtrage suit après relâchement).
+- [x] **Score visible** : colonne Score juste après Projet ; tri par défaut
+      score décroissant quand le filtre prospection est actif (capacité sinon),
+      le tri choisi par l'utilisateur prime ; Région et Statut masquées sous
+      1 300 px.
+- [x] **Vocabulaire** : plus de chemin de fichier ni de statut interne dans
+      les libellés ; explications du score et de la distance réseau derrière
+      un bouton ⓘ (barre de filtres 1 777 → 1 566 px).
+- [x] **Lien direct vers un site** : `#…&site=<id>` ouvre la fiche et zoome ;
+      bouton « Copier le lien » dans la fiche (filtres inclus).
+- [x] **Recherche** élargie au département et à la clé registre (code EIC ou
+      id ODRÉ, celle du classeur Excel).
+- Ménage : clé registre calculée une fois (`d.key`, `CONFIG.siteKey`), seuil
+  mobile partagé (`CONFIG.isMobile`), règles CSS mortes retirées.
+
+Assurance : élevée. Vérification Playwright (Chromium) : 30 contrôles
+automatisés, desktop 1440, portable 1280, mobile 390, lien direct ; aucune
+erreur console. Suite proposée (palier 2) : présélections « Vue screening » /
+« Shortlist zone test », regroupement des filtres avec section Avancé repliée,
+carte sans clustering sous ~400 sites, KPI orientés screening, iframe Airtable
+chargée seulement en mode Qualifier.
+
 ## Coûts et appels d'API
 
 Règle : aucun appel payant sans accord préalable d'Ahmed, avec le nombre
